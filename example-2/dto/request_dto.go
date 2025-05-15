@@ -1,4 +1,4 @@
-package common
+package dto
 
 import (
 	"ergo.services/ergo/net/edf"

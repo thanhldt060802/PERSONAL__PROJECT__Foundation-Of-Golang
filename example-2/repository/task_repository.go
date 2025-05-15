@@ -20,6 +20,16 @@ func InitTaskRepository() {
 	TaskRepositoryInstance = &taskRepository{}
 }
 
+func (taskRepository *taskRepository) GetById(ctx context.Context, id int64) (*model.Task, error) {
+	var task model.Task
+
+	if err := infrastructure.PostgresDB.NewSelect().Model(&task).Where("id = ?", id).Scan(ctx); err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
 func (taskRepository *taskRepository) GetAvailable(ctx context.Context) (int64, error) {
 	tx, err := infrastructure.PostgresDB.Begin()
 	if err != nil {
@@ -40,16 +50,6 @@ func (taskRepository *taskRepository) GetAvailable(ctx context.Context) (int64, 
 	}
 
 	return task.Id, tx.Commit()
-}
-
-func (taskRepository *taskRepository) GetById(ctx context.Context, id int64) (*model.Task, error) {
-	var task model.Task
-
-	if err := infrastructure.PostgresDB.NewSelect().Model(&task).Where("id = ?", id).Scan(ctx); err != nil {
-		return nil, err
-	}
-
-	return &task, nil
 }
 
 func (taskRepository *taskRepository) Update(ctx context.Context, updatedTask *model.Task) error {

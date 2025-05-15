@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"thanhldt060802/actors"
 	"thanhldt060802/infrastructure"
@@ -29,11 +30,11 @@ func main() {
 	}
 
 	node1Options.Log.DefaultLogger.Disable = true
-	node1Options.Log.Loggers = append(node1Options.Log.Loggers, gen.Logger{Name: "node-1", Logger: loggerColored})
+	node1Options.Log.Loggers = append(node1Options.Log.Loggers, gen.Logger{Name: "node_1", Logger: loggerColored})
 	node1Options.Network.Cookie = "123"
 
 	node2Options.Log.DefaultLogger.Disable = true
-	node2Options.Log.Loggers = append(node2Options.Log.Loggers, gen.Logger{Name: "node-2", Logger: loggerColored})
+	node2Options.Log.Loggers = append(node2Options.Log.Loggers, gen.Logger{Name: "node_2", Logger: loggerColored})
 	node2Options.Network.Cookie = "123"
 
 	node1, err := ergo.StartNode("node1@localhost", node1Options)
@@ -41,11 +42,11 @@ func main() {
 		panic(err)
 	}
 
-	node1.SpawnRegister("sender-1", actors.FactorySenderActor, gen.ProcessOptions{}, "receiver-1")
-	node1.SpawnRegister("sender-2", actors.FactorySenderActor, gen.ProcessOptions{}, "receiver-2")
-	node1.SpawnRegister("sender-3", actors.FactorySenderActor, gen.ProcessOptions{}, "receiver-3")
-	node1.SpawnRegister("sender-4", actors.FactorySenderActor, gen.ProcessOptions{}, "receiver-4")
-	node1.SpawnRegister("sender-5", actors.FactorySenderActor, gen.ProcessOptions{}, "receiver-5")
+	node1.SpawnRegister("sender_1", actors.FactorySenderActor, gen.ProcessOptions{}, &actors.SenderActorParam{ReceiverProcessName: "receiver_1"})
+	node1.SpawnRegister("sender_2", actors.FactorySenderActor, gen.ProcessOptions{}, &actors.SenderActorParam{ReceiverProcessName: "receiver_2"})
+	node1.SpawnRegister("sender_3", actors.FactorySenderActor, gen.ProcessOptions{}, &actors.SenderActorParam{ReceiverProcessName: "receiver_3"})
+	node1.SpawnRegister("sender_4", actors.FactorySenderActor, gen.ProcessOptions{}, &actors.SenderActorParam{ReceiverProcessName: "receiver_4"})
+	node1.SpawnRegister("sender_5", actors.FactorySenderActor, gen.ProcessOptions{}, &actors.SenderActorParam{ReceiverProcessName: "receiver_5"})
 
 	node2, err := ergo.StartNode("node2@localhost", node2Options)
 	if err != nil {
@@ -53,15 +54,17 @@ func main() {
 	}
 
 	receiverSupervisorPID, _ := node2.Spawn(receiversupervisors.FactoryReceiverSupervisor, gen.ProcessOptions{})
-	node2.Log().Info("Supervisor for node 2 is started succesfully with PID %s", receiverSupervisorPID)
+	node2.Log().Info("Supervisor for node2@localhost is started succesfully with PID %s", receiverSupervisorPID)
 
+	fmt.Println()
+	fmt.Println()
 	time.Sleep(2 * time.Second)
 
-	node1.Send(gen.Atom("sender-1"), "start")
-	node1.Send(gen.Atom("sender-2"), "start")
-	node1.Send(gen.Atom("sender-3"), "start")
-	node1.Send(gen.Atom("sender-4"), "start")
-	node1.Send(gen.Atom("sender-5"), "start")
+	node1.Send(gen.Atom("sender_1"), "start")
+	node1.Send(gen.Atom("sender_2"), "start")
+	node1.Send(gen.Atom("sender_3"), "start")
+	node1.Send(gen.Atom("sender_4"), "start")
+	node1.Send(gen.Atom("sender_5"), "start")
 
 	node1.Wait()
 }

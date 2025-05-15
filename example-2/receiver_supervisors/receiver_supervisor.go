@@ -21,27 +21,27 @@ func (supervisorSpecC *ReceiverSupervisor) Init(args ...any) (act.SupervisorSpec
 	supervisorSpec.Type = act.SupervisorTypeOneForOne
 	supervisorSpec.Children = []act.SupervisorChildSpec{
 		{
-			Name:    "receiver-1",
+			Name:    "receiver_1",
 			Factory: actors.FactoryReceiverActor,
 			Options: gen.ProcessOptions{},
 		},
 		{
-			Name:    "receiver-2",
+			Name:    "receiver_2",
 			Factory: actors.FactoryReceiverActor,
 			Options: gen.ProcessOptions{},
 		},
 		{
-			Name:    "receiver-3",
+			Name:    "receiver_3",
 			Factory: actors.FactoryReceiverActor,
 			Options: gen.ProcessOptions{},
 		},
 		{
-			Name:    "receiver-4",
+			Name:    "receiver_4",
 			Factory: actors.FactoryReceiverActor,
 			Options: gen.ProcessOptions{},
 		},
 		{
-			Name:    "receiver-5",
+			Name:    "receiver_5",
 			Factory: actors.FactoryReceiverActor,
 			Options: gen.ProcessOptions{},
 		},

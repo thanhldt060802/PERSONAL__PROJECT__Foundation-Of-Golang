@@ -2,7 +2,7 @@ package actors
 
 import (
 	"context"
-	"thanhldt060802/common"
+	"thanhldt060802/dto"
 	"thanhldt060802/repository"
 	"time"
 
@@ -10,9 +10,13 @@ import (
 	"ergo.services/ergo/gen"
 )
 
+type SenderActorParam struct {
+	ReceiverProcessName string
+}
+
 type SenderActor struct {
 	act.Actor
-	receiverName string
+	SenderActorParam *SenderActorParam
 }
 
 func FactorySenderActor() gen.ProcessBehavior {
@@ -20,8 +24,8 @@ func FactorySenderActor() gen.ProcessBehavior {
 }
 
 func (senderActor *SenderActor) Init(args ...any) error {
-	senderActor.Log().Info("STARTED PROCESS %s %s on %s", senderActor.PID(), senderActor.Name(), senderActor.Node().Name())
-	senderActor.receiverName = args[0].(string)
+	senderActor.Log().Info("started process %s %s on %s", senderActor.PID(), senderActor.Name(), senderActor.Node().Name())
+	senderActor.SenderActorParam = args[0].(*SenderActorParam)
 	return nil
 }
 
@@ -30,7 +34,7 @@ func (senderActor *SenderActor) HandleMessage(from gen.PID, message any) error {
 	case "start":
 		{
 			process := gen.ProcessID{
-				Name: gen.Atom(senderActor.receiverName),
+				Name: gen.Atom(senderActor.SenderActorParam.ReceiverProcessName),
 				Node: "node2@localhost",
 			}
 
@@ -40,20 +44,21 @@ func (senderActor *SenderActor) HandleMessage(from gen.PID, message any) error {
 					break
 				}
 
-				message := common.TaskRequest{
+				message := dto.TaskRequest{
 					Id: id,
 				}
 
 				for {
-					senderActor.Log().Info(" --> SEND REQUEST to PROCESS %s", process)
+					senderActor.Log().Info("--> %s: %#v", process.Name, message)
+
 					result, err := senderActor.Call(process, message)
 					if err == nil {
-						senderActor.Log().Info(" <-- RECEIVED RESPONSE from PROCESS %s: %s", process, result)
+						senderActor.Log().Info("<-- %s: %#v", process, result)
 						break
+					} else {
+						senderActor.Log().Warning("--- Something wrong from PROCESS %s, retrying ... (Error: %s)", process.Name, err.Error())
+						time.Sleep(1 * time.Second)
 					}
-
-					senderActor.Log().Warning(" --- Something wrong from PROCESS %s, retrying ... (Error: %s)", process, err.Error())
-					time.Sleep(2 * time.Second)
 				}
 			}
 
@@ -61,6 +66,6 @@ func (senderActor *SenderActor) HandleMessage(from gen.PID, message any) error {
 		}
 	}
 
-	senderActor.Log().Error(" --- Unknown message %#v", message)
+	senderActor.Log().Error("--- Unknown message %#v", message)
 	return nil
 }

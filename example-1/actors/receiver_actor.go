@@ -2,7 +2,7 @@ package actors
 
 import (
 	"fmt"
-	"thanhldt060802/common"
+	"thanhldt060802/dto"
 
 	"ergo.services/ergo/act"
 	"ergo.services/ergo/gen"
@@ -17,24 +17,14 @@ func FactoryReceiverActor() gen.ProcessBehavior {
 }
 
 func (receiverActor *ReceiverActor) Init(args ...any) error {
-	receiverActor.Log().Info("STARTED PROCESS %s %s on %s", receiverActor.PID(), receiverActor.Name(), receiverActor.Node().Name())
+	receiverActor.Log().Info("started process %s %s on %s", receiverActor.PID(), receiverActor.Name(), receiverActor.Node().Name())
 	return nil
 }
 
 func (receiverActor *ReceiverActor) HandleCall(from gen.PID, ref gen.Ref, request any) (any, error) {
-	switch request := request.(type) {
-	case common.LocalRequest:
-		{
-			receiverActor.Log().Info(" <-- RECEIVED LOCAL REQUEST from %s: %s", from, request.Message)
-			return fmt.Sprintf("DONE %s", request.Message), nil
-		}
-	case common.RemoteRequest:
-		{
-			receiverActor.Log().Info(" <-- RECEIVED REMOTE REQUEST from %s: %s", from, request.Message)
-			return fmt.Sprintf("DONE %s", request.Message), nil
-		}
+	{
+		request := request.(dto.SimpleRequest)
+		receiverActor.Log().Info("<-- %s: %#v", from, request)
+		return fmt.Sprintf("COMPLETED %#v", request), nil
 	}
-
-	receiverActor.Log().Info("Received unknown request: %#v", request)
-	return nil, nil
 }

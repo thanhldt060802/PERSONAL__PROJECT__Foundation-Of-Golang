@@ -3,7 +3,7 @@ package actors
 import (
 	"fmt"
 	"math/rand"
-	"thanhldt060802/common"
+	"thanhldt060802/dto"
 	"time"
 
 	"ergo.services/ergo/act"
@@ -20,63 +20,63 @@ func FactorySenderActor() gen.ProcessBehavior {
 }
 
 func (senderActor *SenderActor) Init(args ...any) error {
-	senderActor.Log().Info("STARTED PROCESS %s %s on %s", senderActor.PID(), senderActor.Name(), senderActor.Node().Name())
+	senderActor.Log().Info("started process %s %s on %s", senderActor.PID(), senderActor.Name(), senderActor.Node().Name())
 	senderActor.count = 1
 	return nil
 }
 
 func (senderActor *SenderActor) HandleMessage(from gen.PID, message any) error {
-	processName := "receiver-1"
+	processName := "receiver_1"
 	delayTime := time.Duration(rand.Intn(int(200*time.Millisecond-100*time.Millisecond))) + 100*time.Millisecond
 
-	switch message.(type) {
-	case common.DoCallLocal:
+	switch message.(string) {
+	case "local":
 		{
 			process := gen.Atom(processName)
 
-			message := common.RemoteRequest{
-				Message: fmt.Sprintf("Task %d of process %s %s", senderActor.count, senderActor.PID(), senderActor.Name()),
+			message := dto.SimpleRequest{
+				Message: fmt.Sprintf("Task %d of process %s", senderActor.count, senderActor.Name()),
 			}
 
-			senderActor.Log().Info(" --> SEND REQUEST to LOCAL PROCESS %s: %s", process, message.Message)
+			senderActor.Log().Info("--> %s (LOCAL): %#v", process, message)
 
 			result, err := senderActor.Call(process, message)
 			if err == nil {
-				senderActor.Log().Info(" <-- RECEIVED RESPONSE from LOCAL PROCESS %s: %s", process, result)
+				senderActor.Log().Info("<-- %s (LOCAL): %#v", process, result)
 			} else {
-				senderActor.Log().Error(" --- SEND REQUEST to LOCAL PROCESS %s failed: %s", process, err.Error())
+				senderActor.Log().Error("--- Call to %s (LOCAL) failed: %s", process, err.Error())
 			}
 
 			senderActor.count++
-			senderActor.SendAfter(senderActor.PID(), common.DoCallRemote{}, delayTime)
+			senderActor.SendAfter(senderActor.PID(), "remote", delayTime)
 			return nil
 		}
-	case common.DoCallRemote:
+	case "remote":
 		{
 			process := gen.ProcessID{
 				Name: gen.Atom(processName),
 				Node: "node2@localhost",
 			}
 
-			message := common.RemoteRequest{
-				Message: fmt.Sprintf("Task %d of process %s %s", senderActor.count, senderActor.PID(), senderActor.Name()),
+			message := dto.SimpleRequest{
+				Message: fmt.Sprintf("Task %d of process %s", senderActor.count, senderActor.Name()),
 			}
 
-			senderActor.Log().Info(" --> SEND REQUEST to REMOTE PROCESS %s: %s", process.Name, message.Message)
+			senderActor.Log().Info("--> %s (REMOTE): %#v", process.Name, message)
 
 			result, err := senderActor.Call(process, message)
 			if err == nil {
-				senderActor.Log().Info(" <-- RECEIVED RESPONSE from REMOTE PROCESS %s: %s", process.Name, result)
+				senderActor.Log().Info("<-- %s (REMOTE): %#v", process.Name, result)
 			} else {
-				senderActor.Log().Error(" --- SEND REQUEST to REMOTE PROCESS %s failed: %s", process.Name, err.Error())
+				senderActor.Log().Error("--- Call to %s (REMOTE) failed: %s", process.Name, err.Error())
 			}
 
 			senderActor.count++
-			senderActor.SendAfter(senderActor.PID(), common.DoCallLocal{}, delayTime)
+			senderActor.SendAfter(senderActor.PID(), "local", delayTime)
 			return nil
 		}
 	}
 
-	senderActor.Log().Error(" --- Unknown message %#v", message)
+	senderActor.Log().Error("--- Unknown message %#v", message)
 	return nil
 }
