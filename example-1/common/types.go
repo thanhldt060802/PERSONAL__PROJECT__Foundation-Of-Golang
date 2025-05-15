@@ -12,8 +12,8 @@ type RemoteRequest struct {
 	Message string
 }
 
+// Register network messages
 func init() {
-	// register network messages
 	if err := edf.RegisterTypeOf(LocalRequest{}); err != nil {
 		panic(err)
 	}
