@@ -21,9 +21,4 @@ INSERT INTO tasks ("name", progress, "target", "status") VALUES
 ('Task 12', 0, 30, 'PENDING'),
 ('Task 13', 0, 15, 'PENDING'),
 ('Task 14', 0, 40, 'PENDING'),
-('Task 15', 0, 25, 'PENDING'),
-('Task 16', 0, 30, 'PENDING'),
-('Task 17', 0, 30, 'PENDING'),
-('Task 18', 0, 15, 'PENDING'),
-('Task 19', 0, 40, 'PENDING'),
-('Task 20', 0, 25, 'PENDING');
+('Task 15', 0, 25, 'PENDING');
