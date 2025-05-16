@@ -4,13 +4,13 @@ import (
 	"ergo.services/ergo/net/edf"
 )
 
-type SimpleRequest struct {
-	Message string
+type TaskRequest struct {
+	Id int64
 }
 
 // Register network messages
 func init() {
-	if err := edf.RegisterTypeOf(SimpleRequest{}); err != nil {
+	if err := edf.RegisterTypeOf(TaskRequest{}); err != nil {
 		panic(err)
 	}
 }

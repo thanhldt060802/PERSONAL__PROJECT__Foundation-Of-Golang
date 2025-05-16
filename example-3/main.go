@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"thanhldt060802/actors"
+	"thanhldt060802/infrastructure"
 	receiversupervisors "thanhldt060802/receiver_supervisors"
+	"thanhldt060802/repository"
 	"time"
 
 	"ergo.services/ergo"
@@ -14,6 +16,10 @@ import (
 
 func main() {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	infrastructure.InitPostgesDB()
+	defer infrastructure.PostgresDB.Close()
+	repository.InitTaskRepository()
 
 	var node1Options, node2Options gen.NodeOptions
 

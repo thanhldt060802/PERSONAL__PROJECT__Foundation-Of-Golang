@@ -1,8 +1,9 @@
 package actors
 
 import (
-	"fmt"
+	"context"
 	"thanhldt060802/dto"
+	"thanhldt060802/repository"
 	"time"
 
 	"ergo.services/ergo/act"
@@ -15,7 +16,6 @@ type SenderActorParam struct {
 
 type SenderActor struct {
 	act.Actor
-	count            int
 	SenderActorParam *SenderActorParam
 }
 
@@ -25,7 +25,6 @@ func FactorySenderActor() gen.ProcessBehavior {
 
 func (senderActor *SenderActor) Init(args ...any) error {
 	senderActor.Log().Info("started process %s %s on %s", senderActor.PID(), senderActor.Name(), senderActor.Node().Name())
-	senderActor.count = 1
 	senderActor.SenderActorParam = args[0].(*SenderActorParam)
 	return nil
 }
@@ -40,12 +39,13 @@ func (senderActor *SenderActor) HandleMessage(from gen.PID, message any) error {
 			}
 
 			for {
-				if senderActor.count > 3 {
+				id, err := repository.TaskRepositoryInstance.GetAvailable(context.Background())
+				if err != nil {
 					break
 				}
 
-				message := dto.SimpleRequest{
-					Message: fmt.Sprintf("Task %d of process %s", senderActor.count, senderActor.Name()),
+				message := dto.TaskRequest{
+					Id: id,
 				}
 
 				for {
@@ -54,7 +54,6 @@ func (senderActor *SenderActor) HandleMessage(from gen.PID, message any) error {
 					result, err := senderActor.Call(process, message)
 					if err == nil {
 						senderActor.Log().Info("<-- %s: %#v", process, result)
-						senderActor.count++
 						break
 					} else {
 						senderActor.Log().Warning("--- Something wrong from PROCESS %s, retrying ... (Error: %s)", process.Name, err.Error())
