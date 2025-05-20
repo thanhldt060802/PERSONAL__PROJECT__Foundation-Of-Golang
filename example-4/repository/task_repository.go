@@ -12,22 +12,13 @@ type taskRepository struct {
 }
 
 type TaskRepository interface {
+	GetAvailable(ctx context.Context) (*model.Task, error)
 	GetById(ctx context.Context, id int64) (*model.Task, error)
 	Update(ctx context.Context, updatedTask *model.Task) error
 }
 
 func InitTaskRepository() {
 	TaskRepositoryInstance = &taskRepository{}
-}
-
-func (taskRepository *taskRepository) GetById(ctx context.Context, id int64) (*model.Task, error) {
-	var task model.Task
-
-	if err := infrastructure.PostgresDB.NewSelect().Model(&task).Where("id = ?", id).Scan(ctx); err != nil {
-		return nil, err
-	}
-
-	return &task, nil
 }
 
 func (taskRepository *taskRepository) GetAvailable(ctx context.Context) (*model.Task, error) {
@@ -45,6 +36,16 @@ func (taskRepository *taskRepository) GetAvailable(ctx context.Context) (*model.
 	}
 
 	return task, nil
+}
+
+func (taskRepository *taskRepository) GetById(ctx context.Context, id int64) (*model.Task, error) {
+	var task model.Task
+
+	if err := infrastructure.PostgresDB.NewSelect().Model(&task).Where("id = ?", id).Scan(ctx); err != nil {
+		return nil, err
+	}
+
+	return &task, nil
 }
 
 func (taskRepository *taskRepository) Update(ctx context.Context, updatedTask *model.Task) error {

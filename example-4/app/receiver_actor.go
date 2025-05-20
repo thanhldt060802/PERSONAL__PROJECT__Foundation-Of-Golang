@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"math/rand"
+	"thanhldt060802/repository"
 	"thanhldt060802/types"
 	"time"
 
@@ -9,19 +11,19 @@ import (
 	"ergo.services/ergo/gen"
 )
 
-type ReceiverActorParams struct {
-	dispatcherProcessName string
-	dispatcherNodeName    string
+type ReceiverActorParam struct {
+	SenderName     string
+	SenderNodeName string
 }
 
 type ReceiverActor struct {
 	act.Actor
 
-	id       int64
-	progress int64
-	target   int64
+	params ReceiverActorParam
 
-	params ReceiverActorParams
+	taskId       int64
+	taskProgress int64
+	taskTarget   int64
 }
 
 func FactoryReceiverActor() gen.ProcessBehavior {
@@ -31,76 +33,57 @@ func FactoryReceiverActor() gen.ProcessBehavior {
 func (receiverActor *ReceiverActor) Init(args ...any) error {
 	receiverActor.Log().Info("started process %s %s on %s", receiverActor.PID(), receiverActor.Name(), receiverActor.Node().Name())
 
-	receiverActor.params = args[0].(ReceiverActorParams)
+	receiverActor.params = args[0].(ReceiverActorParam)
 
 	process := gen.ProcessID{
-		Name: gen.Atom(receiverActor.params.dispatcherProcessName),
-		Node: gen.Atom(receiverActor.params.dispatcherNodeName),
+		Name: gen.Atom(receiverActor.params.SenderName),
+		Node: gen.Atom(receiverActor.params.SenderNodeName),
 	}
-	sendingMessage := types.ReturnTaskMessage{
-		SelfStatus: "idle",
-	}
-	receiverActor.Send(process, sendingMessage)
+	receiverActor.SendAfter(process, "idle", 2*time.Second)
 
 	return nil
 }
 
 func (receiverActor *ReceiverActor) HandleMessage(from gen.PID, message any) error {
-	receiverMessage := message.(types.DoTaskMessage)
+	receivedMessage := message.(types.DoTaskMessage)
 
-	receiverActor.Log().Info("<-- %s: %#v", from, receiverMessage)
+	receiverActor.Log().Info("<-- %s: %#v", from, receivedMessage)
 
-	receiverActor.id = receiverMessage.Id
-	receiverActor.progress = receiverMessage.Progress
-	receiverActor.target = receiverMessage.Target
+	receiverActor.taskId = receivedMessage.TaskId
+	receiverActor.taskProgress = receivedMessage.TaskProgress
+	receiverActor.taskTarget = receivedMessage.TaskTarget
 
-	defer func() {
-		if r := recover(); r != nil {
-			process := gen.ProcessID{
-				Name: gen.Atom(receiverActor.params.dispatcherProcessName),
-				Node: gen.Atom(receiverActor.params.dispatcherNodeName),
-			}
-			sendingMessage := types.ReturnTaskMessage{
-				Id:         receiverActor.id,
-				Progress:   receiverActor.progress,
-				Target:     receiverActor.target,
-				SelfStatus: "cancel",
-			}
-			if _, err := receiverActor.Call(process, sendingMessage); err != nil {
-				receiverActor.Log().Error("Failed to notify dispatcher before crash: %s", err.Error())
-			}
-
-			panic(r)
-		}
-	}()
-
-	for receiverActor.progress < receiverActor.target {
+	for receiverActor.taskProgress < receiverActor.taskTarget {
 		if rand.Intn(10) == 0 {
 			panic("Simulate crash")
 		}
 
 		time.Sleep(1 * time.Second)
-		receiverActor.progress++
+		receiverActor.taskProgress++
 	}
 
-	receiverActor.Log().Info("COMPLETED %#v", message)
-
-	sendingMessage1 := types.ReturnTaskMessage{
-		Id:         receiverActor.id,
-		Progress:   receiverActor.progress,
-		Target:     receiverActor.target,
-		SelfStatus: "complete",
+	foundTask, err := repository.TaskRepositoryInstance.GetById(context.Background(), receiverActor.taskId)
+	foundTask.Progress = receiverActor.taskProgress
+	foundTask.Status = "COMPLETE"
+	if repository.TaskRepositoryInstance.Update(context.Background(), foundTask); err != nil {
+		receiverActor.Log().Info("Update task failed: %#v (%s)", foundTask, err.Error())
 	}
-	receiverActor.Send(from, sendingMessage1)
+	receiverActor.Log().Info("Update task success: %#v", foundTask)
 
-	sendingMessage2 := types.ReturnTaskMessage{
-		SelfStatus: "idle",
-	}
-	receiverActor.Send(from, sendingMessage2)
+	receiverActor.Log().Info("Complete task %#v", foundTask)
+	receiverActor.Send(from, "idle")
 
 	return nil
 }
 
 func (receiverActor *ReceiverActor) Terminate(reason error) {
 	receiverActor.Log().Error("Actor terminated. Panic reason: %s", reason.Error())
+
+	foundTask, err := repository.TaskRepositoryInstance.GetById(context.Background(), receiverActor.taskId)
+	foundTask.Progress = receiverActor.taskProgress
+	foundTask.Status = "CANCEL"
+	if repository.TaskRepositoryInstance.Update(context.Background(), foundTask); err != nil {
+		receiverActor.Log().Info("Update task failed: %#v (%s)", foundTask, err.Error())
+	}
+	receiverActor.Log().Info("Update task success: %#v", foundTask)
 }

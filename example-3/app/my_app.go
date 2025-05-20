@@ -9,7 +9,7 @@ import (
 	"ergo.services/logger/colored"
 )
 
-type DistributedSystemHandleTask struct {
+type DistributedSystemDemo struct {
 	SenderNodeName   string
 	ReceiverNodeName string
 	NumberOfProcess  int
@@ -19,8 +19,8 @@ type DistributedSystemHandleTask struct {
 	cookie       string
 }
 
-func NewDistributedSystemHandleTask(SenderNodeName string, ReceiverNodeName string, NumberOfProcess int) *DistributedSystemHandleTask {
-	return &DistributedSystemHandleTask{
+func NewDistributedSystemDemo(SenderNodeName string, ReceiverNodeName string, NumberOfProcess int) *DistributedSystemDemo {
+	return &DistributedSystemDemo{
 		SenderNodeName:   SenderNodeName,
 		ReceiverNodeName: ReceiverNodeName,
 		NumberOfProcess:  NumberOfProcess,
@@ -28,7 +28,7 @@ func NewDistributedSystemHandleTask(SenderNodeName string, ReceiverNodeName stri
 	}
 }
 
-func (app *DistributedSystemHandleTask) initSenderNode() {
+func (app *DistributedSystemDemo) initSenderNode() {
 	var nodeOptions gen.NodeOptions
 
 	optionColored := colored.Options{TimeFormat: time.DateTime, IncludeName: true}
@@ -47,10 +47,10 @@ func (app *DistributedSystemHandleTask) initSenderNode() {
 	}
 	app.senderNode = node
 
-	app.senderNode.SpawnRegister("sender", FactorySenderActor, gen.ProcessOptions{})
+	app.senderNode.SpawnRegister(gen.Atom("sender"), FactorySenderActor, gen.ProcessOptions{})
 }
 
-func (app *DistributedSystemHandleTask) initReceiverNode() {
+func (app *DistributedSystemDemo) initReceiverNode() {
 	var nodeOptions gen.NodeOptions
 
 	optionColored := colored.Options{TimeFormat: time.DateTime, IncludeName: true}
@@ -77,7 +77,7 @@ func (app *DistributedSystemHandleTask) initReceiverNode() {
 	app.receiverNode.Log().Info("Supervisor for receiver node is started succesfully with PID %s", receiverSupervisorPID)
 }
 
-func (app *DistributedSystemHandleTask) Start() {
+func (app *DistributedSystemDemo) Start() {
 	app.initSenderNode()
 	app.initReceiverNode()
 

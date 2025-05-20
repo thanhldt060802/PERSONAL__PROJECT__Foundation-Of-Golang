@@ -9,7 +9,7 @@ import (
 	"ergo.services/logger/colored"
 )
 
-type DistributedSystemHandleTask struct {
+type DistributedSystemDemo struct {
 	SenderNodeName   string
 	ReceiverNodeName string
 	NumberOfProcess  int
@@ -19,8 +19,8 @@ type DistributedSystemHandleTask struct {
 	cookie       string
 }
 
-func NewDistributedSystemHandleTask(SenderNodeName string, ReceiverNodeName string, NumberOfProcess int) *DistributedSystemHandleTask {
-	return &DistributedSystemHandleTask{
+func NewDistributedSystemDemo(SenderNodeName string, ReceiverNodeName string, NumberOfProcess int) *DistributedSystemDemo {
+	return &DistributedSystemDemo{
 		SenderNodeName:   SenderNodeName,
 		ReceiverNodeName: ReceiverNodeName,
 		NumberOfProcess:  NumberOfProcess,
@@ -28,7 +28,7 @@ func NewDistributedSystemHandleTask(SenderNodeName string, ReceiverNodeName stri
 	}
 }
 
-func (app *DistributedSystemHandleTask) initSenderNode() {
+func (app *DistributedSystemDemo) initSenderNode() {
 	var nodeOptions gen.NodeOptions
 
 	optionColored := colored.Options{TimeFormat: time.DateTime, IncludeName: true}
@@ -47,10 +47,16 @@ func (app *DistributedSystemHandleTask) initSenderNode() {
 	}
 	app.senderNode = node
 
-	app.senderNode.SpawnRegister("sender", FactorySenderActor, gen.ProcessOptions{})
+	for i := 1; i <= app.NumberOfProcess; i++ {
+		app.senderNode.SpawnRegister(gen.Atom(fmt.Sprintf("sender_%d", i)), FactorySenderActor, gen.ProcessOptions{}, SenderActorParams{
+			ReceiverName:     fmt.Sprintf("receiver_%d", i),
+			ReceiverNodeName: app.ReceiverNodeName,
+		})
+		app.senderNode.SpawnRegister(gen.Atom(fmt.Sprintf("receiver_%d", i)), FactoryReceiverActor, gen.ProcessOptions{})
+	}
 }
 
-func (app *DistributedSystemHandleTask) initReceiverNode() {
+func (app *DistributedSystemDemo) initReceiverNode() {
 	var nodeOptions gen.NodeOptions
 
 	optionColored := colored.Options{TimeFormat: time.DateTime, IncludeName: true}
@@ -69,20 +75,17 @@ func (app *DistributedSystemHandleTask) initReceiverNode() {
 	}
 	app.receiverNode = node
 
-	receiverSupervisorPID, _ := app.receiverNode.Spawn(FactoryReceiverSupervisor, gen.ProcessOptions{}, ReceiverSupervisorParam{
-		SenderName:      "sender",
-		SenderNodeName:  app.SenderNodeName,
-		NumberOfProcess: app.NumberOfProcess,
-	})
-	app.receiverNode.Log().Info("Supervisor for receiver node is started succesfully with PID %s", receiverSupervisorPID)
+	for i := 1; i <= app.NumberOfProcess; i++ {
+		app.receiverNode.SpawnRegister(gen.Atom(fmt.Sprintf("receiver_%d", i)), FactoryReceiverActor, gen.ProcessOptions{})
+	}
 }
 
-func (app *DistributedSystemHandleTask) Start() {
+func (app *DistributedSystemDemo) Start() {
 	app.initSenderNode()
 	app.initReceiverNode()
 
 	fmt.Println()
 	fmt.Println()
 
-	app.receiverNode.Wait()
+	app.senderNode.Wait()
 }

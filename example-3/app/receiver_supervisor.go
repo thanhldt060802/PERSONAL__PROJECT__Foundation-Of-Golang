@@ -31,7 +31,7 @@ func (receiverSupervisor *ReceiverSupervisor) Init(args ...any) (act.SupervisorS
 	supervisorSpec.Type = act.SupervisorTypeOneForOne
 	supervisorSpec.Children = []act.SupervisorChildSpec{}
 	supervisorSpec.Restart.Strategy = act.SupervisorStrategyTransient
-	supervisorSpec.Restart.Intensity = 15
+	supervisorSpec.Restart.Intensity = 10
 	supervisorSpec.Restart.Period = 5
 
 	for i := 1; i <= receiverSupervisor.params.NumberOfProcess; i++ {

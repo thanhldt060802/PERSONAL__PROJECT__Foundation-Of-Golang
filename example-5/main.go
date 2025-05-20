@@ -1,20 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"thanhldt060802/app"
-	"thanhldt060802/infrastructure"
-	"thanhldt060802/repository"
 	"time"
+
+	"ergo.services/ergo"
+	"ergo.services/ergo/gen"
+	"ergo.services/logger/colored"
 )
 
 func main() {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	infrastructure.InitPostgesDB()
-	defer infrastructure.PostgresDB.Close()
-	repository.InitTaskRepository()
+	var nodeOptions gen.NodeOptions
 
-	myApp := app.NewDistributedSystemHandleTask("node1@localhost", "node2@localhost", 5)
-	myApp.Start()
+	optionColored := colored.Options{TimeFormat: time.DateTime, IncludeName: true}
+	loggerColored, err := colored.CreateLogger(optionColored)
+	if err != nil {
+		panic(err)
+	}
+
+	nodeOptions.Log.DefaultLogger.Disable = true
+	nodeOptions.Log.Loggers = append(nodeOptions.Log.Loggers, gen.Logger{Name: "my_node", Logger: loggerColored})
+	nodeOptions.Network.Cookie = "123"
+
+	myNode, err := ergo.StartNode(gen.Atom("mynode@localhost"), nodeOptions)
+	if err != nil {
+		panic(err)
+	}
+
+	myNode.SpawnRegister(gen.Atom("receiver_fsm"), app.FactoryReceiverFSMActor, gen.ProcessOptions{})
+
+	fmt.Println()
+	fmt.Println()
+
+	myNode.Wait()
 }
