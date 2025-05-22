@@ -1,4 +1,4 @@
-module thanhtldt060802
+module thanhldt060802
 
 go 1.24.2
 

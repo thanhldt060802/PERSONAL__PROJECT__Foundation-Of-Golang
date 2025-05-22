@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"thanhtldt060802/infrastructure"
-	"thanhtldt060802/internal/model"
+	"thanhldt060802/infrastructure"
+	"thanhldt060802/internal/model"
 )
-
-var TaskRepositoryInstance *taskRepository
 
 type taskRepository struct {
 }
@@ -14,10 +12,6 @@ type taskRepository struct {
 type TaskRepository interface {
 	GetById(ctx context.Context, id int64) (*model.Task, error)
 	Update(ctx context.Context, updatedTask *model.Task) error
-}
-
-func InitTaskRepository() {
-	TaskRepositoryInstance = &taskRepository{}
 }
 
 func NewTaskRepository() TaskRepository {

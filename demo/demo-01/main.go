@@ -3,12 +3,12 @@ package main
 import (
 	"math/rand"
 	"net/http"
-	"thanhtldt060802/actor_model/app"
-	"thanhtldt060802/infrastructure"
-	"thanhtldt060802/internal/dto"
-	"thanhtldt060802/internal/handler"
-	"thanhtldt060802/internal/repository"
-	"thanhtldt060802/internal/service"
+	"thanhldt060802/infrastructure"
+	"thanhldt060802/internal/actor_model/app"
+	"thanhldt060802/internal/dto"
+	"thanhldt060802/internal/handler"
+	"thanhldt060802/internal/repository"
+	"thanhldt060802/internal/service"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -26,7 +26,7 @@ func main() {
 	var humaDocsEmbedded = `<!doctype html>
 	<html>
 	  <head>
-	    <title>FashionECom APIs</title>
+	    <title>Run task - Demo Actor model</title>
 	    <meta charset="utf-8" />
 	    <meta name="viewport" content="width=device-width, initial-scale=1" />
 	  </head>
@@ -38,7 +38,7 @@ func main() {
 	  </body>
 	</html>`
 
-	humaCfg := huma.DefaultConfig("Test FSM Actor", "v1.0.0")
+	humaCfg := huma.DefaultConfig("Run task using Actor model", "v1.0.0")
 	humaCfg.DocsPath = ""
 	humaCfg.JSONSchemaDialect = ""
 	humaCfg.CreateHooks = nil
@@ -64,7 +64,7 @@ func main() {
 
 	taskRepository := repository.NewTaskRepository()
 
-	myApp := app.New(taskRepository, "mynode", 1)
+	myApp := app.New(taskRepository, "mynode", 3)
 	myApp.Start()
 
 	taskService := service.NewTaskService(taskRepository, myApp.Node(), myApp.SupervisorPID())
