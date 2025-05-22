@@ -16,17 +16,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func main() {
-
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	infrastructure.InitPostgesDB()
-	defer infrastructure.PostgresDB.Close()
-
-	var humaDocsEmbedded = `<!doctype html>
+var humaDocsEmbedded = `<!doctype html>
 	<html>
 	  <head>
-	    <title>Run task - Demo Actor model</title>
+	    <title>Demo-01</title>
 	    <meta charset="utf-8" />
 	    <meta name="viewport" content="width=device-width, initial-scale=1" />
 	  </head>
@@ -38,7 +31,14 @@ func main() {
 	  </body>
 	</html>`
 
-	humaCfg := huma.DefaultConfig("Run task using Actor model", "v1.0.0")
+func main() {
+
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	infrastructure.InitPostgesDB()
+	defer infrastructure.PostgresDB.Close()
+
+	humaCfg := huma.DefaultConfig("Demo-01", "v1.0.0")
 	humaCfg.DocsPath = ""
 	humaCfg.JSONSchemaDialect = ""
 	humaCfg.CreateHooks = nil

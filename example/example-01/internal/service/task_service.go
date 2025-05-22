@@ -20,7 +20,6 @@ type taskService struct {
 type TaskService interface {
 	GetExistedWorkers(ctx context.Context) (*dto.ExistedWorkers, error)
 	RunTask(ctx context.Context, reqDTO *dto.RunTaskRequest) error
-	RunTasks(ctx context.Context, reqDTO *dto.RunTasksRequest) error
 }
 
 func NewTaskService(taskRepository repository.TaskRepository, node gen.Node, supervisorPID gen.PID) TaskService {
@@ -72,17 +71,6 @@ func (taskService *taskService) RunTask(ctx context.Context, reqDTO *dto.RunTask
 	message := types.RunTaskMessage{
 		WorkerName: reqDTO.Body.WorkerName,
 		TaskId:     reqDTO.Body.TaskId,
-	}
-	if err := taskService.node.Send(taskService.supervisorPID, message); err != nil {
-		return fmt.Errorf("some thing wrong on actor model: %s", err.Error())
-	}
-
-	return nil
-}
-
-func (taskService *taskService) RunTasks(ctx context.Context, reqDTO *dto.RunTasksRequest) error {
-	message := types.RunTasksMessage{
-		TaskIds: reqDTO.Body.TaskIds,
 	}
 	if err := taskService.node.Send(taskService.supervisorPID, message); err != nil {
 		return fmt.Errorf("some thing wrong on actor model: %s", err.Error())

@@ -12,6 +12,14 @@ type SuccessResponse struct {
 	}
 }
 
+type BodyResponse[T any] struct {
+	Body struct {
+		Code    string `json:"code" example:"string"`
+		Message string `json:"message" example:"string"`
+		Data    T      `json:"data"`
+	}
+}
+
 //
 //
 // Error response

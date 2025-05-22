@@ -34,14 +34,6 @@ func NewTaskHandler(api huma.API, taskService service.TaskService) *TaskHandler 
 		Tags:        []string{"Demo"},
 	}, taskHandler.RunTask)
 
-	huma.Register(api, huma.Operation{
-		Method:      http.MethodPost,
-		Path:        "/run-tasks",
-		Summary:     "/run-tasks",
-		Description: "Run tasks.",
-		Tags:        []string{"Demo"},
-	}, taskHandler.RunTasks)
-
 	return taskHandler
 }
 
@@ -76,21 +68,5 @@ func (taskHandler *TaskHandler) RunTask(ctx context.Context, reqDTO *dto.RunTask
 	res := &dto.SuccessResponse{}
 	res.Body.Code = "OK"
 	res.Body.Message = "Run task successful"
-	return res, nil
-}
-
-func (taskHandler *TaskHandler) RunTasks(ctx context.Context, reqDTO *dto.RunTasksRequest) (*dto.SuccessResponse, error) {
-	if err := taskHandler.taskService.RunTasks(ctx, reqDTO); err != nil {
-		res := &dto.ErrorResponse{}
-		res.Status = http.StatusInternalServerError
-		res.Code = "ERR_INTERNAL_SERVER"
-		res.Message = "Run taks failed"
-		res.Details = []string{err.Error()}
-		return nil, res
-	}
-
-	res := &dto.SuccessResponse{}
-	res.Body.Code = "OK"
-	res.Body.Message = "Run tasks successful"
 	return res, nil
 }

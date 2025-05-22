@@ -72,12 +72,12 @@ func (workerActor *WorkerActor) HandleMessage(from gen.PID, message any) error {
 			workerActor.Log().Info("--- Update IN PROGRESS task task_id=%d on postgresql successful", workerActor.task.Id)
 
 			for workerActor.task.Progress < workerActor.task.Target {
-				workerActor.task.Progress++
-				workerActor.Log().Info("--- Processing task task_id=%d (%d/%d)", workerActor.task.Id, workerActor.task.Progress, workerActor.task.Target)
-				time.Sleep(1 * time.Second)
 				if rand.Intn(100) < workerActor.task.ErrorRate {
 					panic("Simulate crash")
 				}
+				workerActor.task.Progress++
+				workerActor.Log().Info("--- Processing task task_id=%d (%d/%d)", workerActor.task.Id, workerActor.task.Progress, workerActor.task.Target)
+				time.Sleep(1 * time.Second)
 			}
 
 			workerActor.task.Status = "COMPLETED"
@@ -103,6 +103,6 @@ func (workerActor *WorkerActor) Terminate(reason error) {
 		if err := workerActor.taskRepository.Update(context.Background(), workerActor.task); err != nil {
 			workerActor.Log().Error("--- Update CANCEL task task_id=%d on postgresql failed: %s", workerActor.task.Id, err.Error())
 		}
-		workerActor.Log().Info("--- Update CANCEL task task_id=%d successful", workerActor.task.Id)
+		workerActor.Log().Info("--- Update CANCEL task task_id=%d on postgresql successful", workerActor.task.Id)
 	}
 }

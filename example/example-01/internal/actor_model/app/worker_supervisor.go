@@ -85,11 +85,6 @@ func (workerSupervisor *WorkerSupervisor) HandleMessage(from gen.PID, message an
 			workerSupervisor.runTask(receivedMessage)
 			return nil
 		}
-	case types.RunTasksMessage:
-		{
-			workerSupervisor.runTasks(receivedMessage)
-			return nil
-		}
 	}
 
 	return nil
@@ -139,52 +134,5 @@ func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) 
 		}
 		workerSupervisor.availableWorkerMap[message.WorkerName] = false
 		workerSupervisor.Log().Info("--> Start new actor %s successful", message.WorkerName)
-	}
-}
-
-func (workerSupervisor *WorkerSupervisor) runTasks(message types.RunTasksMessage) {
-	numberOfTasks := len(message.TaskIds)
-	numberOfExistedWorkers := len(workerSupervisor.Children())
-	index := 0
-
-	for _, supervisorChildSpec := range workerSupervisor.Children() {
-		if index >= numberOfTasks {
-			break
-		}
-
-		workerName := supervisorChildSpec.Name.String()
-		workerName = workerName[1 : len(workerName)-1]
-
-		if workerSupervisor.availableWorkerMap[workerName] {
-			workerSupervisor.Log().Info("--> Restart existed actor %s", workerName)
-
-			if err := workerSupervisor.StartChild(gen.Atom(workerName), workerSupervisor.taskRepository, message.TaskIds[index]); err != nil {
-				workerSupervisor.Log().Error("--- Restart existed actor %s failed: %s", workerName, err.Error())
-			}
-			workerSupervisor.availableWorkerMap[workerName] = false
-			index++
-
-			workerSupervisor.Log().Info("--> Restart existed actor %s successful", workerName)
-		}
-	}
-
-	for index < numberOfTasks {
-		numberOfExistedWorkers++
-		workerName := fmt.Sprintf("worker_%d", numberOfExistedWorkers)
-
-		workerSupervisor.Log().Info("--> Start new actor %s", workerName)
-
-		if err := workerSupervisor.AddChild(act.SupervisorChildSpec{
-			Name:    gen.Atom(workerName),
-			Factory: FactoryWorkerActor,
-			Options: gen.ProcessOptions{},
-			Args:    []any{workerSupervisor.taskRepository, message.TaskIds[index]},
-		}); err != nil {
-			workerSupervisor.Log().Info("--> Start new actor %s failed: %s", workerName, err.Error())
-		}
-		workerSupervisor.availableWorkerMap[workerName] = false
-		index++
-
-		workerSupervisor.Log().Info("--> Start new actor %s successful", workerName)
 	}
 }
