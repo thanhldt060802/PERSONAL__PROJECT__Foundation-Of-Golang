@@ -34,7 +34,6 @@ func main() {
 		panic(err)
 	}
 
-	// node.Spawn(app.FactoryWorkerSupervisor, gen.ProcessOptions{})
 	node.Spawn(app.FactoryWorkerPool, gen.ProcessOptions{})
 
 	select {}
