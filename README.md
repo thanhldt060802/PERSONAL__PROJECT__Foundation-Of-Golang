@@ -95,7 +95,7 @@
 <h1><strong><i>Các demo ứng dụng của Ergo trong xử lý đồng thời theo mô hình Actor</i></strong></h1>
 
 <h3><strong>Demo 01:</strong></h3>
-<span>Mô hình Actor cho phép chạy đồng thời các Task. Biết Task được lấy trên PostgreSQL có sẵn.</span>
+<div><strong>Mô hình Actor cho phép chạy đồng thời các Task. Biết Task được lấy trên PostgreSQL có sẵn.</strong></div>
 <ul>
     <li>Thực hiện xử lý Task đồng thời và cập nhật trạng thái Task kịp thời khi xảy ra lỗi.</li>
     <li>Quản lý các Actor một cách linh hoạt, đảm bảo hiệu suất.</li>
