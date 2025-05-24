@@ -31,27 +31,28 @@ func New(taskRepository repository.TaskRepository, nodeName string, numberOfInit
 }
 
 func (actorModel *ActorModel) Start() {
-	var nodeOptions gen.NodeOptions
-
 	optionColored := colored.Options{TimeFormat: time.DateTime, IncludeName: true}
 	loggerColored, err := colored.CreateLogger(optionColored)
 	if err != nil {
 		panic(err)
 	}
 
-	nodeOptions.Applications = []gen.ApplicationBehavior{
+	var myNodeOptions gen.NodeOptions
+	myNodeOptions.Log.DefaultLogger.Disable = true
+	myNodeOptions.Log.Loggers = []gen.Logger{
+		{Name: "mynode", Logger: loggerColored},
+	}
+	myNodeOptions.Applications = []gen.ApplicationBehavior{
 		observer.CreateApp(observer.Options{}),
 	}
-	nodeOptions.Log.DefaultLogger.Disable = true
-	nodeOptions.Log.Loggers = append(nodeOptions.Log.Loggers, gen.Logger{Name: actorModel.nodeName, Logger: loggerColored})
 
-	node, err := ergo.StartNode(gen.Atom(fmt.Sprintf("%v@localhost", actorModel.nodeName)), nodeOptions)
+	myNode, err := ergo.StartNode(gen.Atom(fmt.Sprintf("%v@localhost", actorModel.nodeName)), myNodeOptions)
 	if err != nil {
 		panic(err)
 	}
-	actorModel.node = node
+	actorModel.node = myNode
 
-	supervisorPID, _ := actorModel.node.Spawn(FactoryWorkerSupervisor, gen.ProcessOptions{}, actorModel.taskRepository, actorModel.numberOfInitialWorkers)
+	supervisorPID, _ := actorModel.node.SpawnRegister(gen.Atom("worker_supervisor"), FactoryWorkerSupervisor, gen.ProcessOptions{}, actorModel.taskRepository, actorModel.numberOfInitialWorkers)
 	actorModel.supervisorPID = supervisorPID
 
 	actorModel.node.Send(supervisorPID, types.DoStart{})

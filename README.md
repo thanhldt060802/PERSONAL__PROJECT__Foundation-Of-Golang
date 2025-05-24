@@ -1,42 +1,103 @@
-<h1>Các thí nghiệm với Ergo trong xử lý đồng thời theo Actor model</h1>
-<h3>Ví dụ 1:</h3>
-<span>Tình huống 2 Sender call đồng bộ đến local Receiver trên cùng node1 và call đến remote Receiver trên node2.</span>
+<h1><strong><i>Các thí nghiệm với Ergo trong xử lý đồng thời theo mô hình Actor</i></strong></h1>
+
+<h3><strong>Ví dụ 01:</strong></h3>
+<div><strong>2 Sender Call() đồng bộ tới 1 Receiver trên cùng một node.</strong></div>
 <ul>
-<li>Không đóng gói hệ thống.</li>
-<li>Sender được cung cấp tên của Receiver.</li>
-<li>2 Sender đồng thời call đến lần lượt local Receiver và remote Receiver bởi việc Sender tự trigger chính nó để thay đổi vị trí (local/remote) Receiver cần call.</li>
+    <li>Khi 2 Sender Call() đồng thời tới 1 Receiver thì tuỳ vào Receiver nhận tín hiệu của Sender nào trước, nó xử lý xong và trả kết quả về cho Sender đó trước rồi mới tới Sender còn lại, trong lúc Receiver xử lý thì Sender phải chờ Receiver trả về kết quả.</li>
 </ul>
-<br>                                      
-<h3>Ví dụ 2:</h3>
-<span>Tình huống n Sender call đồng bộ đến n local Receiver trên cùng node1 và call đến n remote Receiver trên node2 tương ứng.</span>
+
+<h3><strong>Ví dụ 02:</strong></h3>
+<div><strong>2 Sender Send() bất đồng bộ tới 1 Receiver trên cùng một node.</strong></div>
 <ul>
-<li>Đóng gói hệ thống.</li>
-<li>Sender x được cung cấp tên của Receiver x để chỉ tương tác với Receiver x.</li>
-<li>n Sender đồng thời call đến lần lượt n local Receiver và n remote Receiver bởi việc Sender x tự trigger chính nó để thay đổi vị trí (local/remote) Receiver x cần call.</li>
+    <li>Khi 2 Sender Call() đồng thời tới 1 Receiver thì tuỳ vào Receiver nhận tín hiệu của Sender nào trước, nó xử lý xong và trả kết quả về cho Sender đó trước rồi mới tới Sender còn lại, trong lúc Receiver xử lý thì Sender không phải chờ Receiver vì Receiver sẽ không trả về kết quả.</li>
 </ul>
-<br>
-<h3>Ví dụ 3:</h3>
-<span>Tình huống 1 Sender trên node1 call bất đồng bộ đến n remote Receiver trên node2.</span>
+
+<h3><strong>Ví dụ 03:</strong></h3>
+<div><strong>2 Sender trên node1@localhost Call() đồng bộ tới 2 Receiver lần lượt là local trên cùng node và remote trên node2@localhost.</strong></div>
 <ul>
-<li>Đóng gói hệ thống.</li>
-<li>n Receiver được cung cấp tên của Sender để phát tín hiệu "idle" cho Sender, Sender nhận đúng tính hiệu và send qua cho Receiver gửi tín hiệu.</li>
-<li>n Receiver đồng thời send đến Sender bởi khi Receiver được khởi tạo hoặc Receiver hoàn tất xử lý.</li>
-<li>n Receiver được quản lý bởi 1 Supervisor để restart lại Receiver khi nó bị crash bởi tình huống crash giả lập.</li>
+    <li>Khi tạo node1 và node2 cần cho chúng sử dụng chung một Cookie (đóng vai trò bảo mật liên lạc giữ 2 node) và đăng ký Network Message cho các Message dùng để Sender gửi quan Remote Receiver.</li>
 </ul>
-<br>
-<h3>Ví dụ 4:</h3>
-<span>Tình huống vận dụng: 1 Sender trên node1 call bất đồng bộ đến n remote Receiver trên node2, mỗi Receiver xử lý 1 task và thực hiện cập nhật lên database khi hoàn tất hoặc gặp lỗi.</span>
+
+<h3><strong>Ví dụ 04:</strong></h3>
+<div><strong>2 Sender trên node1@localhost Send() bất đồng bộ tới 2 Receiver lần lượt là local trên cùng node và remote trên node2@localhost.</strong></div>
 <ul>
-<li>Đóng gói hệ thống.</li>
-<li>n Receiver được cung cấp tên của Sender để phát tín hiệu "idle" cho Sender, Sender nhận đúng tính hiệu và send task qua cho Receiver gửi tín hiệu.</li>
-<li>n Receiver đồng thời send đến Sender bởi khi Receiver được khởi tạo hoặc Receiver hoàn tất xử lý task.</li>
-<li>Dữ liệu task mà Receiver xử lý sẽ được cập nhật lại ngay khi Receiver hoàn tất xử lý hoặc gặp lỗi trong quá trình xử lý.</li>
-<li>n Receiver được quản lý bởi 1 Supervisor để restart lại Receiver khi nó bị crash bởi tình huống crash giả lập.</li>
+    <li>Khi tạo node1 và node2 cần cho chúng sử dụng chung một Cookie (đóng vai trò bảo mật liên lạc giữ 2 node) và đăng ký Network Message cho các Message dùng để Sender gửi quan Remote Receiver.</li>
 </ul>
-<br>
-<h3>Ví dụ 5:</h3>
-<span>Triển khai FSM theo mô hình có sẵn của Erlang.</span>
+
+<h3><strong>Ví dụ 05:</strong></h3>
+<div><strong>Sử dụng Observe để quan sát trên các node đang vận hành có liên quan.</strong></div>
 <ul>
-<li>Không đóng gói hệ thống.</li>
-<li>Định nghĩa các state và quy tắc chuyển state theo event.</li>
+    <li>Quan sát các Actor đang chạy trên node và ở node khác nếu có các tương tác Remote.</li>
+    <li>Thống kê số liệu về các Actor đang vận hành cũng như các thành phần quan trọng khác trong mô hình Actor.</li>
+</ul>
+
+<h3><strong>Ví dụ 06:</strong></h3>
+<div><strong>Sử dụng Supervisor để quản lý, giám sát (và có thể điều phối cho) N Worker.</strong></div>
+<ul>
+    <li>Các chiến lượt Restart:<br>
+        <ul>
+            <li>Permanent: Restart lại Actor khi bị lỗi (kể cả exit signal).</li>
+            <li>Transient: Restart lại Actor khi bị lỗi (bỏ qua exit signal).</li>
+            <li>Temporary: Không Restart lại Actor khi bị lỗi.</li>
+        </ul>
+    </li>
+    <li>Các loại Supervisor:<br>
+        <ul>
+            <li>OneForOne: Khi một Actor bị Restart, không ảnh tới các Actor còn lại.</li>
+            <li>AllForOne: Khi một Actor bị Restart, tất cả các Actor còn lại cũng bị Restart.</li>
+            <li>RestForOne: Khi một Actor bị Restart, các Actor phía sau nó sẽ bị Restart.</li>
+        </ul>
+    </li>
+</ul>
+
+<h3><strong>Ví dụ 07:</strong></h3>
+<div><strong>Sử dụng Pool để quản lý N Worker và điều phối cho 1 Worker trong nhóm.</strong></div>
+<ul>
+    <li>Khi Pool có N Actor thì việc Call() hay Send() tới Pool sẽ được nó điều hướng tương ứng tới HandleCall() và HandleMessage() của một Actor nào đó trong Pool.</li>
+    <li>Với Call() là đồng bộ nhưng dùng với Pool thì ta có thể Call() và đồng thời chờ Pool trả về kết quả với số lượng ứng với số lượng Actor trong Pool.</li>
+</ul>
+
+<h3><strong>Ví dụ 08:</strong></h3>
+<span>Sử dụng TCP để xử lý các gói tin.</span>
+<ul>
+
+</ul>
+
+<h3><strong>Ví dụ 09:</strong></h3>
+<span>Sử dụng WebWorker để tạo một trình xử lý các yêu cầu HTTP/HTTPS từ client.</span>
+<ul>
+
+</ul>
+
+<h3><strong>Ví dụ 10:</strong></h3>
+<span>Sử dụng WebSocket để tạo môi trường real-time cho các client.</span>
+<ul>
+
+</ul>
+
+<h3><strong>Ví dụ 11:</strong></h3>
+<div><strong>Thiết lập FSM trong mô hình Actor.</strong></div>
+<ul>
+    <li>Khi một Actor muốn xử lý một công đoạn nào đó sẽ cần dữa vào trạng thái hiện tại để có thể xử lý sự kiện và chuyển sang trạng thái tiếp theo.</li>
+</ul>
+
+<h3><strong>Ví dụ 12:</strong></h3>
+<div><strong>Tích hợp mô hình Actor vào Service API.</strong></div>
+<ul>
+    <li>Nhúng các thành phần của node vào trong Service Layer để có thể xử lý tương tác với Actor trong Service Layer.</li>
+    <li>Nhứng các thành phần liên quan đến database vào mô hình Actor để có thể thực hiện tương tác với database trong mô hình Actor.</li>
+    <li>Quản lý các Actor một cách linh hoạt, đảm bảo hiệu suất.</li>
+    <li>Thống kê được thông tin cơ bản của các Actor hoạt động trên node.</li>
+</ul>
+
+<br><br>
+
+<h1><strong><i>Các demo ứng dụng của Ergo trong xử lý đồng thời theo mô hình Actor</i></strong></h1>
+
+<h3><strong>Demo 01:</strong></h3>
+<span>Mô hình Actor cho phép chạy đồng thời các Task. Biết Task được lấy trên PostgreSQL có sẵn.</span>
+<ul>
+    <li>Thực hiện xử lý Task đồng thời và cập nhật trạng thái Task kịp thời khi xảy ra lỗi.</li>
+    <li>Quản lý các Actor một cách linh hoạt, đảm bảo hiệu suất.</li>
+    <li>Thống kê được thông tin cơ bản của các Actor hoạt động trên node.</li>
 </ul>

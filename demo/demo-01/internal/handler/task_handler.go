@@ -28,6 +28,14 @@ func NewTaskHandler(api huma.API, taskService service.TaskService) *TaskHandler 
 
 	huma.Register(api, huma.Operation{
 		Method:      http.MethodPost,
+		Path:        "/dispatch-task",
+		Summary:     "/dispatch-task",
+		Description: "Dispatch task.",
+		Tags:        []string{"Demo"},
+	}, taskHandler.DispatchTask)
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodPost,
 		Path:        "/run-task",
 		Summary:     "/run-task",
 		Description: "Run task.",
@@ -60,6 +68,22 @@ func (taskHandler *TaskHandler) GetExistedWorkers(ctx context.Context, _ *struct
 	res.Body.Code = "OK"
 	res.Body.Message = "Get existed workers successful"
 	res.Body.Data = *existedWorkers
+	return res, nil
+}
+
+func (taskHandler *TaskHandler) DispatchTask(ctx context.Context, reqDTO *dto.DispatchTaskRequest) (*dto.SuccessResponse, error) {
+	if err := taskHandler.taskService.DispatchTask(ctx, reqDTO); err != nil {
+		res := &dto.ErrorResponse{}
+		res.Status = http.StatusInternalServerError
+		res.Code = "ERR_INTERNAL_SERVER"
+		res.Message = "Dispatch task failed"
+		res.Details = []string{err.Error()}
+		return nil, res
+	}
+
+	res := &dto.SuccessResponse{}
+	res.Body.Code = "OK"
+	res.Body.Message = "Dispatch task successful"
 	return res, nil
 }
 
