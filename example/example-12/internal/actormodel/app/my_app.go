@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"thanhldt060802/internal/actor_model/types"
 	"thanhldt060802/internal/repository"
 	"time"
 
@@ -54,8 +53,6 @@ func (actorModel *ActorModel) Start() {
 
 	supervisorPID, _ := actorModel.node.SpawnRegister(gen.Atom("worker_supervisor"), FactoryWorkerSupervisor, gen.ProcessOptions{}, actorModel.taskRepository, actorModel.numberOfInitialWorkers)
 	actorModel.supervisorPID = supervisorPID
-
-	actorModel.node.Send(supervisorPID, types.DoStart{})
 }
 
 func (actorModel *ActorModel) Node() gen.Node {

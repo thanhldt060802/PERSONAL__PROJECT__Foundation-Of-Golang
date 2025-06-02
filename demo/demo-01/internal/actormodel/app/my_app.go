@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"thanhldt060802/internal/actor_model/types"
+	"thanhldt060802/internal/actormodel/types"
 	"thanhldt060802/internal/repository"
 	"time"
 

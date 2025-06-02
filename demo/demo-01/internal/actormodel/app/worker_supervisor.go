@@ -2,7 +2,8 @@ package app
 
 import (
 	"fmt"
-	"thanhldt060802/internal/actor_model/types"
+	"sync"
+	"thanhldt060802/internal/actormodel/types"
 	"thanhldt060802/internal/repository"
 
 	"ergo.services/ergo/act"
@@ -15,7 +16,8 @@ type WorkerSupervisor struct {
 	taskRepository         repository.TaskRepository
 	numberOfInitialWorkers int
 
-	availableWorkerMap map[string]bool
+	availableWorkerMap      map[string]bool
+	availableWorkerMapMutex sync.Mutex
 }
 
 func FactoryWorkerSupervisor() gen.ProcessBehavior {
@@ -26,6 +28,7 @@ func (workerSupervisor *WorkerSupervisor) Init(args ...any) (act.SupervisorSpec,
 	workerSupervisor.taskRepository = args[0].(repository.TaskRepository)
 	workerSupervisor.numberOfInitialWorkers = args[1].(int)
 	workerSupervisor.availableWorkerMap = map[string]bool{}
+	workerSupervisor.availableWorkerMapMutex = sync.Mutex{}
 
 	supervisorSpec := act.SupervisorSpec{}
 	supervisorSpec.EnableHandleChild = true
@@ -46,7 +49,7 @@ func (workerSupervisor *WorkerSupervisor) Init(args ...any) (act.SupervisorSpec,
 		workerSupervisor.availableWorkerMap[fmt.Sprintf("worker_%v", i)] = false
 	}
 
-	workerSupervisor.Log().Info("Started worker supervisor %s %s on %s", workerSupervisor.PID(), workerSupervisor.Name(), workerSupervisor.Node().Name())
+	workerSupervisor.Log().Info("Started worker supervisor %v %v on %v", workerSupervisor.PID(), workerSupervisor.Name(), workerSupervisor.Node().Name())
 	return supervisorSpec, nil
 }
 
@@ -59,7 +62,10 @@ func (workerSupervisor *WorkerSupervisor) HandleChildTerminate(name gen.Atom, pi
 	if reason.Error() == gen.TerminateReasonNormal.Error() {
 		workerName := name.String()
 		workerName = workerName[1 : len(workerName)-1]
+
+		workerSupervisor.availableWorkerMapMutex.Lock()
 		workerSupervisor.availableWorkerMap[workerName] = true
+		workerSupervisor.availableWorkerMapMutex.Unlock()
 	} else {
 		workerSupervisor.Log().Error("Actor %v terminated. Panic reason: %v", name, reason.Error())
 	}
@@ -82,9 +88,19 @@ func (workerSupervisor *WorkerSupervisor) HandleMessage(from gen.PID, message an
 			workerSupervisor.getExistedWorkers(receivedMessage)
 			return nil
 		}
+	case types.DispatchTaskMessage:
+		{
+			workerSupervisor.dispatchTask(receivedMessage)
+			return nil
+		}
 	case types.RunTaskMessage:
 		{
 			workerSupervisor.runTask(receivedMessage)
+			return nil
+		}
+	case types.RunTaskListMessage:
+		{
+			workerSupervisor.runTaskList(receivedMessage)
 			return nil
 		}
 	}
@@ -101,18 +117,51 @@ func (workerSupervisor *WorkerSupervisor) getExistedWorkers(message types.GetExi
 		workerName := supervisorChildSpec.Name.String()
 		workerName = workerName[1 : len(workerName)-1]
 		workerNames = append(workerNames, workerName)
+
+		workerSupervisor.availableWorkerMapMutex.Lock()
 		if workerSupervisor.availableWorkerMap[workerName] {
 			available = append(available, workerName)
 		} else {
 			running = append(running, workerName)
 		}
+		workerSupervisor.availableWorkerMapMutex.Unlock()
 	}
-	message.WorkerNames <- workerNames
-	message.Running <- running
-	message.Available <- available
+	message.WorkerNamesChan <- workerNames
+	message.RunningChan <- running
+	message.AvailableChan <- available
+}
+
+func (workerSupervisor *WorkerSupervisor) dispatchTask(message types.DispatchTaskMessage) {
+	workerSupervisor.availableWorkerMapMutex.Lock()
+	if available, ok := workerSupervisor.availableWorkerMap[message.WorkerName]; ok {
+		if available {
+			workerSupervisor.Log().Info("Restart existed actor %v", message.WorkerName)
+			if err := workerSupervisor.StartChild(gen.Atom(message.WorkerName), workerSupervisor.taskRepository, message.TaskId); err != nil {
+				workerSupervisor.Log().Error("Restart existed actor %v failed: %v", message.WorkerName, err.Error())
+			}
+			workerSupervisor.availableWorkerMap[message.WorkerName] = false
+			workerSupervisor.Log().Info("Restart existed actor %v successful", message.WorkerName)
+		} else {
+			workerSupervisor.Log().Warning("Actor %v is running", message.WorkerName)
+		}
+	} else {
+		workerSupervisor.Log().Info("Start new actor %v", message.WorkerName)
+		if err := workerSupervisor.AddChild(act.SupervisorChildSpec{
+			Name:    gen.Atom(message.WorkerName),
+			Factory: FactoryWorkerActor,
+			Options: gen.ProcessOptions{},
+			Args:    []any{workerSupervisor.taskRepository, message.TaskId},
+		}); err != nil {
+			workerSupervisor.Log().Info("Start new actor %v failed: %v", message.WorkerName, err.Error())
+		}
+		workerSupervisor.availableWorkerMap[message.WorkerName] = false
+		workerSupervisor.Log().Info("Start new actor %v successful", message.WorkerName)
+	}
+	workerSupervisor.availableWorkerMapMutex.Unlock()
 }
 
 func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) {
+	workerSupervisor.availableWorkerMapMutex.Lock()
 	for workerName := range workerSupervisor.availableWorkerMap {
 		if workerSupervisor.availableWorkerMap[workerName] {
 			workerSupervisor.Log().Info("Restart existed actor %v", workerName)
@@ -120,13 +169,21 @@ func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) 
 				workerSupervisor.Log().Error("Restart existed actor %v failed: %v", workerName, err.Error())
 			}
 			workerSupervisor.availableWorkerMap[workerName] = false
+			workerSupervisor.availableWorkerMapMutex.Unlock()
+
 			workerSupervisor.Log().Info("Restart existed actor %v successful", workerName)
 
 			return
 		}
 	}
 
-	workerName := fmt.Sprintf("worker_%v", len(workerSupervisor.availableWorkerMap)+1)
+	var workerName string
+	for i := len(workerSupervisor.availableWorkerMap) + 1; ; i++ {
+		workerName = fmt.Sprintf("worker_%v", i)
+		if _, ok := workerSupervisor.availableWorkerMap[workerName]; !ok {
+			break
+		}
+	}
 	workerSupervisor.Log().Info("Start new actor %v", workerName)
 	if err := workerSupervisor.AddChild(act.SupervisorChildSpec{
 		Name:    gen.Atom(workerName),
@@ -137,5 +194,16 @@ func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) 
 		workerSupervisor.Log().Info("Start new actor %v failed: %v", workerName, err.Error())
 	}
 	workerSupervisor.availableWorkerMap[workerName] = false
+	workerSupervisor.availableWorkerMapMutex.Unlock()
+
 	workerSupervisor.Log().Info("Start new actor %v successful", workerName)
+}
+
+func (workerSupervisor *WorkerSupervisor) runTaskList(message types.RunTaskListMessage) {
+	for _, taskId := range message.TaskIdList {
+		sendingMessage := types.RunTaskMessage{
+			TaskId: taskId,
+		}
+		workerSupervisor.runTask(sendingMessage)
+	}
 }

@@ -2,7 +2,7 @@ package app
 
 import (
 	"math/rand"
-	"thanhldt060802/internal/actor_model/types"
+	"thanhldt060802/internal/actormodel/types"
 	"thanhldt060802/internal/model"
 	"thanhldt060802/internal/repository"
 	"time"
@@ -65,6 +65,7 @@ func (workerActor *WorkerActor) HandleMessage(from gen.PID, message any) error {
 			workerActor.Log().Info("UPDATE COMPLETED task taskId=%v on database successful", workerActor.task.Id)
 
 			workerActor.Log().Info("COMPLETED task taskId=%v", workerActor.task.Id)
+
 			return gen.TerminateReasonNormal
 		}
 	}

@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"sync"
-	"thanhldt060802/internal/actor_model/types"
+	"thanhldt060802/internal/actormodel/types"
 	"thanhldt060802/internal/dto"
 	"thanhldt060802/internal/repository"
 
@@ -31,14 +30,14 @@ func NewTaskService(taskRepository repository.TaskRepository, node gen.Node, sup
 }
 
 func (taskService *taskService) GetExistedWorkers(ctx context.Context) (*dto.ExistedWorkers, error) {
-	workerNames := make(chan []string)
-	running := make(chan []string)
-	available := make(chan []string)
+	workerNamesChan := make(chan []string)
+	runningChan := make(chan []string)
+	availableChan := make(chan []string)
 
 	message := types.GetExistedWorkersMessage{
-		WorkerNames: workerNames,
-		Running:     running,
-		Available:   available,
+		WorkerNamesChan: workerNamesChan,
+		RunningChan:     runningChan,
+		AvailableChan:   availableChan,
 	}
 
 	if err := taskService.node.Send(taskService.supervisorPID, message); err != nil {
@@ -46,23 +45,9 @@ func (taskService *taskService) GetExistedWorkers(ctx context.Context) (*dto.Exi
 	}
 
 	existedWorkers := &dto.ExistedWorkers{}
-	wg := sync.WaitGroup{}
-	wg.Add(3)
-
-	go func() {
-		existedWorkers.WorkerNames = <-workerNames
-		wg.Done()
-	}()
-	go func() {
-		existedWorkers.Running = <-running
-		wg.Done()
-	}()
-	go func() {
-		existedWorkers.Available = <-available
-		wg.Done()
-	}()
-
-	wg.Wait()
+	existedWorkers.WorkerNames = <-workerNamesChan
+	existedWorkers.Running = <-runningChan
+	existedWorkers.Available = <-availableChan
 
 	return existedWorkers, nil
 }

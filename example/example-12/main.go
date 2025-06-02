@@ -3,7 +3,7 @@ package main
 import (
 	"math/rand"
 	"net/http"
-	"thanhldt060802/internal/actor_model/app"
+	"thanhldt060802/internal/actormodel/app"
 	"thanhldt060802/internal/dto"
 	"thanhldt060802/internal/handler"
 	"thanhldt060802/internal/repository"

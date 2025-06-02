@@ -3,8 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"sync"
-	"thanhldt060802/internal/actor_model/types"
+	"thanhldt060802/internal/actormodel/types"
 	"thanhldt060802/internal/dto"
 	"thanhldt060802/internal/repository"
 
@@ -21,7 +20,7 @@ type TaskService interface {
 	GetExistedWorkers(ctx context.Context) (*dto.ExistedWorkers, error)
 	DispatchTask(ctx context.Context, reqDTO *dto.DispatchTaskRequest) error
 	RunTask(ctx context.Context, reqDTO *dto.RunTaskRequest) error
-	RunTasks(ctx context.Context, reqDTO *dto.RunTasksRequest) error
+	RunTaskList(ctx context.Context, reqDTO *dto.RunTaskListRequest) error
 }
 
 func NewTaskService(taskRepository repository.TaskRepository, node gen.Node, supervisorPID gen.PID) TaskService {
@@ -33,14 +32,14 @@ func NewTaskService(taskRepository repository.TaskRepository, node gen.Node, sup
 }
 
 func (taskService *taskService) GetExistedWorkers(ctx context.Context) (*dto.ExistedWorkers, error) {
-	workerNames := make(chan []string)
-	running := make(chan []string)
-	available := make(chan []string)
+	workerNamesChan := make(chan []string)
+	runningChan := make(chan []string)
+	availableChan := make(chan []string)
 
 	message := types.GetExistedWorkersMessage{
-		WorkerNames: workerNames,
-		Running:     running,
-		Available:   available,
+		WorkerNamesChan: workerNamesChan,
+		RunningChan:     runningChan,
+		AvailableChan:   availableChan,
 	}
 
 	if err := taskService.node.Send(taskService.supervisorPID, message); err != nil {
@@ -48,23 +47,9 @@ func (taskService *taskService) GetExistedWorkers(ctx context.Context) (*dto.Exi
 	}
 
 	existedWorkers := &dto.ExistedWorkers{}
-	wg := sync.WaitGroup{}
-	wg.Add(3)
-
-	go func() {
-		existedWorkers.WorkerNames = <-workerNames
-		wg.Done()
-	}()
-	go func() {
-		existedWorkers.Running = <-running
-		wg.Done()
-	}()
-	go func() {
-		existedWorkers.Available = <-available
-		wg.Done()
-	}()
-
-	wg.Wait()
+	existedWorkers.WorkerNames = <-workerNamesChan
+	existedWorkers.Running = <-runningChan
+	existedWorkers.Available = <-availableChan
 
 	return existedWorkers, nil
 }
@@ -92,9 +77,9 @@ func (taskService *taskService) RunTask(ctx context.Context, reqDTO *dto.RunTask
 	return nil
 }
 
-func (taskService *taskService) RunTasks(ctx context.Context, reqDTO *dto.RunTasksRequest) error {
-	message := types.RunTasksMessage{
-		TaskIds: reqDTO.Body.TaskIds,
+func (taskService *taskService) RunTaskList(ctx context.Context, reqDTO *dto.RunTaskListRequest) error {
+	message := types.RunTaskListMessage{
+		TaskIdList: reqDTO.Body.TaskIdList,
 	}
 	if err := taskService.node.Send(taskService.supervisorPID, message); err != nil {
 		return fmt.Errorf("some thing wrong on actor model: %v", err.Error())

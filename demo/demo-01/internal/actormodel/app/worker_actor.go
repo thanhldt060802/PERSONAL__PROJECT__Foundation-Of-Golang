@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"thanhldt060802/internal/actor_model/types"
+	"thanhldt060802/internal/actormodel/types"
 	"thanhldt060802/internal/model"
 	"thanhldt060802/internal/repository"
 	"time"

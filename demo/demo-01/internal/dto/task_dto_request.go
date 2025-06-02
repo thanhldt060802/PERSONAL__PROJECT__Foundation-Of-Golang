@@ -13,8 +13,8 @@ type RunTaskRequest struct {
 	}
 }
 
-type RunTasksRequest struct {
+type RunTaskListRequest struct {
 	Body struct {
-		TaskIds []int64 `json:"task_ids" required:"true" doc:"Task id list will distribute to Worker to process."`
+		TaskIdList []int64 `json:"task_id_list" required:"true" doc:"Task id list will distribute to Worker to process."`
 	}
 }

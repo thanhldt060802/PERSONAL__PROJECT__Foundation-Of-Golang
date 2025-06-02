@@ -44,11 +44,11 @@ func NewTaskHandler(api huma.API, taskService service.TaskService) *TaskHandler 
 
 	huma.Register(api, huma.Operation{
 		Method:      http.MethodPost,
-		Path:        "/run-tasks",
-		Summary:     "/run-tasks",
-		Description: "Run tasks.",
+		Path:        "/run-task-list",
+		Summary:     "/run-task-list",
+		Description: "Run task list.",
 		Tags:        []string{"Demo"},
-	}, taskHandler.RunTasks)
+	}, taskHandler.RunTaskList)
 
 	return taskHandler
 }
@@ -103,8 +103,8 @@ func (taskHandler *TaskHandler) RunTask(ctx context.Context, reqDTO *dto.RunTask
 	return res, nil
 }
 
-func (taskHandler *TaskHandler) RunTasks(ctx context.Context, reqDTO *dto.RunTasksRequest) (*dto.SuccessResponse, error) {
-	if err := taskHandler.taskService.RunTasks(ctx, reqDTO); err != nil {
+func (taskHandler *TaskHandler) RunTaskList(ctx context.Context, reqDTO *dto.RunTaskListRequest) (*dto.SuccessResponse, error) {
+	if err := taskHandler.taskService.RunTaskList(ctx, reqDTO); err != nil {
 		res := &dto.ErrorResponse{}
 		res.Status = http.StatusInternalServerError
 		res.Code = "ERR_INTERNAL_SERVER"

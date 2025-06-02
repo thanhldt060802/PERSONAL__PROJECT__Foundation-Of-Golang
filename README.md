@@ -90,6 +90,20 @@
     <li>Thống kê được thông tin cơ bản của các Actor hoạt động trên node.</li>
 </ul>
 
+<h3><strong>Ví dụ 13:</strong></h3>
+<div><strong>Xây dựng mô hình Actor tương tác trên cùng một Data Source.</strong></div>
+<ul>
+    <li>Các Worker chạy đồng thời và truy cập đến cùng một Data Source.</li>
+    <li>Sử dụng sync.Mutex để thực hiện cơ chế khoá/mở khoá đảm bảo đồng bộ hoá tương tác với Data Source trong môi trường truy cập đồng thời.</li>
+</ul>
+
+<h3><strong>Ví dụ 14:</strong></h3>
+<div><strong>Xây dựng mô hình Actor chờ nhận và xử lý theo các Event từ một điểm truy cập.</strong></div>
+<ul>
+    <li>Event Dispatcher đóng vai trò là điểm truy cập và phản hồi theo các Event.</li>
+    <li>Các Worker gửi Request đến Event Dispatcher và lắng nghe các Event được gửi lại từ phía Event Dispatcher và xử lý theo từng Event nhận được.</li>
+</ul>
+
 <br><br>
 
 <h1><strong><i>Các demo ứng dụng của Ergo trong xử lý đồng thời theo mô hình Actor</i></strong></h1>
