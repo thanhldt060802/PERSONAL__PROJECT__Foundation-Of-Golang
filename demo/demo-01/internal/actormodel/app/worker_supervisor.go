@@ -46,7 +46,6 @@ func (workerSupervisor *WorkerSupervisor) Init(args ...any) (act.SupervisorSpec,
 			Options: gen.ProcessOptions{},
 			Args:    nil,
 		})
-		workerSupervisor.availableWorkerMap[fmt.Sprintf("worker_%v", i)] = false
 	}
 
 	workerSupervisor.Log().Info("Started worker supervisor %v %v on %v", workerSupervisor.PID(), workerSupervisor.Name(), workerSupervisor.Node().Name())
@@ -54,7 +53,15 @@ func (workerSupervisor *WorkerSupervisor) Init(args ...any) (act.SupervisorSpec,
 }
 
 func (workerSupervisor *WorkerSupervisor) HandleChildStart(childName gen.Atom, pid gen.PID) error {
+	workerName := childName.String()
+	workerName = workerName[1 : len(workerName)-1]
+
+	workerSupervisor.availableWorkerMapMutex.Lock()
+	workerSupervisor.availableWorkerMap[workerName] = false
+	workerSupervisor.availableWorkerMapMutex.Unlock()
+
 	workerSupervisor.Log().Info("Actor start with name %v and PID %v", childName, pid)
+
 	return nil
 }
 
@@ -139,7 +146,6 @@ func (workerSupervisor *WorkerSupervisor) dispatchTask(message types.DispatchTas
 			if err := workerSupervisor.StartChild(gen.Atom(message.WorkerName), workerSupervisor.taskRepository, message.TaskId); err != nil {
 				workerSupervisor.Log().Error("Restart existed actor %v failed: %v", message.WorkerName, err.Error())
 			}
-			workerSupervisor.availableWorkerMap[message.WorkerName] = false
 			workerSupervisor.Log().Info("Restart existed actor %v successful", message.WorkerName)
 		} else {
 			workerSupervisor.Log().Warning("Actor %v is running", message.WorkerName)
@@ -154,7 +160,6 @@ func (workerSupervisor *WorkerSupervisor) dispatchTask(message types.DispatchTas
 		}); err != nil {
 			workerSupervisor.Log().Info("Start new actor %v failed: %v", message.WorkerName, err.Error())
 		}
-		workerSupervisor.availableWorkerMap[message.WorkerName] = false
 		workerSupervisor.Log().Info("Start new actor %v successful", message.WorkerName)
 	}
 	workerSupervisor.availableWorkerMapMutex.Unlock()
@@ -168,7 +173,6 @@ func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) 
 			if err := workerSupervisor.StartChild(gen.Atom(workerName), workerSupervisor.taskRepository, message.TaskId); err != nil {
 				workerSupervisor.Log().Error("Restart existed actor %v failed: %v", workerName, err.Error())
 			}
-			workerSupervisor.availableWorkerMap[workerName] = false
 			workerSupervisor.availableWorkerMapMutex.Unlock()
 
 			workerSupervisor.Log().Info("Restart existed actor %v successful", workerName)
@@ -193,7 +197,6 @@ func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) 
 	}); err != nil {
 		workerSupervisor.Log().Info("Start new actor %v failed: %v", workerName, err.Error())
 	}
-	workerSupervisor.availableWorkerMap[workerName] = false
 	workerSupervisor.availableWorkerMapMutex.Unlock()
 
 	workerSupervisor.Log().Info("Start new actor %v successful", workerName)
