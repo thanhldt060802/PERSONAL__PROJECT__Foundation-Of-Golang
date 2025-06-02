@@ -158,7 +158,7 @@ func (workerSupervisor *WorkerSupervisor) dispatchTask(message types.DispatchTas
 			Options: gen.ProcessOptions{},
 			Args:    []any{workerSupervisor.taskRepository, message.TaskId},
 		}); err != nil {
-			workerSupervisor.Log().Info("Start new actor %v failed: %v", message.WorkerName, err.Error())
+			workerSupervisor.Log().Error("Start new actor %v failed: %v", message.WorkerName, err.Error())
 		}
 		workerSupervisor.Log().Info("Start new actor %v successful", message.WorkerName)
 	}
@@ -195,7 +195,7 @@ func (workerSupervisor *WorkerSupervisor) runTask(message types.RunTaskMessage) 
 		Options: gen.ProcessOptions{},
 		Args:    []any{workerSupervisor.taskRepository, message.TaskId},
 	}); err != nil {
-		workerSupervisor.Log().Info("Start new actor %v failed: %v", workerName, err.Error())
+		workerSupervisor.Log().Error("Start new actor %v failed: %v", workerName, err.Error())
 	}
 	workerSupervisor.availableWorkerMapMutex.Unlock()
 
