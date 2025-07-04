@@ -1,0 +1,148 @@
+package handler
+
+import (
+	"context"
+	"net/http"
+	"thanhldt060802/dto"
+	"thanhldt060802/service"
+
+	"github.com/danielgtaylor/huma/v2"
+)
+
+type CmdHandler struct {
+	cmdService service.CmdService
+}
+
+func NewCmdHandler(api huma.API, cmdService service.CmdService) *CmdHandler {
+	cmdHandler := &CmdHandler{
+		cmdService: cmdService,
+	}
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodPost,
+		Path:        "/get-existed-workers",
+		Summary:     "/get-existed-workers",
+		Description: "Get existed workers.",
+		Tags:        []string{"Demo"},
+	}, cmdHandler.GetExistedWorkers)
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodPost,
+		Path:        "/open-connection",
+		Summary:     "/open-connection",
+		Description: "Open connection.",
+		Tags:        []string{"Demo"},
+	}, cmdHandler.OpenConnection)
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodPost,
+		Path:        "/close-connection",
+		Summary:     "/close-connection",
+		Description: "Close connection.",
+		Tags:        []string{"Demo"},
+	}, cmdHandler.CloseConnection)
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodPost,
+		Path:        "/dispatch-cmd",
+		Summary:     "/dispatch-cmd",
+		Description: "Dispatch cmd.",
+		Tags:        []string{"Demo"},
+	}, cmdHandler.DispatchCmd)
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodPost,
+		Path:        "/dispatch-cmd-list",
+		Summary:     "/dispatch-cmd-list",
+		Description: "Dispatch cmd list.",
+		Tags:        []string{"Demo"},
+	}, cmdHandler.DispatchCmdList)
+
+	return cmdHandler
+}
+
+func (cmdHandler *CmdHandler) GetExistedWorkers(ctx context.Context, _ *struct{}) (*dto.BodyResponse[dto.ExistedWorkers], error) {
+	existedWorkers, err := cmdHandler.cmdService.GetExistedWorkers(ctx)
+	if err != nil {
+		res := &dto.ErrorResponse{}
+		res.Status = http.StatusInternalServerError
+		res.Code = "ERR_INTERNAL_SERVER"
+		res.Message = "Get existed workers failed"
+		res.Details = []string{err.Error()}
+		return nil, res
+	}
+
+	res := &dto.BodyResponse[dto.ExistedWorkers]{}
+	res.Body.Code = "OK"
+	res.Body.Message = "Get existed workers successful"
+	res.Body.Data = *existedWorkers
+	return res, nil
+}
+
+func (cmdHandler *CmdHandler) OpenConnection(ctx context.Context, reqDTO *dto.OpenConnectionRequest) (*dto.SuccessResponse, error) {
+	if err := cmdHandler.cmdService.OpenConnection(ctx, reqDTO); err != nil {
+		res := &dto.ErrorResponse{}
+		res.Status = http.StatusInternalServerError
+		res.Code = "ERR_INTERNAL_SERVER"
+		res.Message = "Open connection failed"
+		res.Details = []string{err.Error()}
+		return nil, res
+	}
+
+	res := &dto.SuccessResponse{}
+	res.Body.Code = "OK"
+	res.Body.Message = "Open connection successful"
+	return res, nil
+}
+
+func (cmdHandler *CmdHandler) CloseConnection(ctx context.Context, reqDTO *dto.CloseConnectionRequest) (*dto.SuccessResponse, error) {
+	if err := cmdHandler.cmdService.CloseConnection(ctx, reqDTO); err != nil {
+		res := &dto.ErrorResponse{}
+		res.Status = http.StatusInternalServerError
+		res.Code = "ERR_INTERNAL_SERVER"
+		res.Message = "Close connection failed"
+		res.Details = []string{err.Error()}
+		return nil, res
+	}
+
+	res := &dto.SuccessResponse{}
+	res.Body.Code = "OK"
+	res.Body.Message = "Close connection successful"
+	return res, nil
+}
+
+func (cmdHandler *CmdHandler) DispatchCmd(ctx context.Context, reqDTO *dto.DispatchCmdRequest) (*dto.BodyResponse[dto.WorkerReport], error) {
+	workerReport, err := cmdHandler.cmdService.DispatchCmd(ctx, reqDTO)
+	if err != nil {
+		res := &dto.ErrorResponse{}
+		res.Status = http.StatusInternalServerError
+		res.Code = "ERR_INTERNAL_SERVER"
+		res.Message = "Dispatch cmd failed"
+		res.Details = []string{err.Error()}
+		return nil, res
+	}
+
+	res := &dto.BodyResponse[dto.WorkerReport]{}
+	res.Body.Code = "OK"
+	res.Body.Message = "Dispatch cmd successful"
+	res.Body.Data = *workerReport
+	return res, nil
+}
+
+func (cmdHandler *CmdHandler) DispatchCmdList(ctx context.Context, reqDTO *dto.DispatchCmdListRequest) (*dto.BodyResponse[dto.SummaryReport], error) {
+	summaryReport, err := cmdHandler.cmdService.DispatchCmdList(ctx, reqDTO)
+	if err != nil {
+		res := &dto.ErrorResponse{}
+		res.Status = http.StatusInternalServerError
+		res.Code = "ERR_INTERNAL_SERVER"
+		res.Message = "Dispatch cmd lsit failed"
+		res.Details = []string{err.Error()}
+		return nil, res
+	}
+
+	res := &dto.BodyResponse[dto.SummaryReport]{}
+	res.Body.Code = "OK"
+	res.Body.Message = "Dispatch cmd lsit successful"
+	res.Body.Data = *summaryReport
+	return res, nil
+}

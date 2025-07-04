@@ -1,0 +1,86 @@
+OPEN CLOSE CONNECTION
+Input: 100 commands, 40ms delay
+
+- Day:----------------------------------------------------------
+    - Local:
+        - Lần 1:
+            - Complete: 100/100 (5)
+            - Time: 6.72s - 6.85s
+            - Time/cmd: 60ms - 70ms
+        - Lần 2:
+            - Complete: 100/100 (5)
+            - Time: 7.11s - 8.12s
+            - Time/cmd: 60ms - 75ms
+        - Lần 3:
+            - Complete: 100/100 (5)
+            - Time: 6.55s - 6.75s
+            - Time/cmd: 60ms - 65ms
+    - Server:
+        - Lần 1:
+            - Complete: 100/100 (5)
+            - Time: 4.82s - 4.83s
+            - Time/cmd: ~43ms
+        - Lần 2:
+            - Complete: 100/100 (5)
+            - Time: 4.59s - 4.68s
+            - Time/cmd: ~42ms
+        - Lần 3:
+            - Complete: 100/100 (5)
+            - Time: 4.67s - 4.7s
+            - Time/cmd: ~42ms
+
+- Midday:-------------------------------------------------------
+    - Local:
+        - Lần 1:
+            - Complete: 100/100 (5)
+            - Time: 6.93s - 7.13s
+            - Time/cmd: 60ms - 70ms
+        - Lần 2:
+            - Complete: 100/100 (5)
+            - Time: 8.73s - 9.48s
+            - Time/cmd: 70ms - 80ms
+        - Lần 3:
+            - Complete: 100/100 (5)
+            - Time: 8.1s - 8.89s
+            - Time/cmd: 65ms - 80ms
+    - Server:
+        - Lần 1:
+            - Complete: 100/100 (5)
+            - Time: 4.64s - 4.78s
+            - Time/cmd: ~43ms
+        - Lần 2:
+            - Complete: 100/100 (5)
+            - Time: 4.64s - 4.8s
+            - Time/cmd: ~43ms
+        - Lần 3:
+            - Complete: 100/100 (5)
+            - Time: 4.56s - 4.6s
+            - Time/cmd: ~43ms
+
+- Night:--------------------------------------------------------
+    - Local:
+        - Lần 1:
+            - Complete: 100/100 (5)
+            - Time: 8.68s - 8.88s
+            - Time/cmd: 55ms - 60ms
+        - Lần 2:
+            - Complete: 100/100 (5)
+            - Time: 6.82s - 6.98s
+            - Time/cmd: 55ms - 60ms
+        - Lần 3:
+            - Complete: 100/100 (5)
+            - Time: 6.31s - 6.51s
+            - Time/cmd: 55ms - 60ms
+    - Server:
+        - Lần 1:
+            - Complete: 100/100 (5)
+            - Time: 5.41s - 5.64s
+            - Time/cmd: ~43ms
+        - Lần 2:
+            - Complete: 100/100 (5)
+            - Time: 5.18s - 5.31s
+            - Time/cmd: ~43ms
+        - Lần 3:
+            - Complete: 100/100 (5)
+            - Time: 4.96s - 5.05s
+            - Time/cmd: ~44ms
