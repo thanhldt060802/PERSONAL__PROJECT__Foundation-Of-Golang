@@ -1,4 +1,4 @@
-package cache
+package memcache
 
 import (
 	"context"
@@ -13,13 +13,9 @@ type MemCache[K comparable, V any] struct {
 }
 
 type IMemCache[K comparable, V any] interface {
-	// Set [key, value] with default TTL, it means defaultTTL when init MemCache with effect this [key, value]
 	Set(key K, value V)
-	// Set [key, value] with TTL, it means defaultTTL when init MemCache with no effect this [key, value], instead will be TTL param in this function
 	SetTTL(key K, value V, ttl time.Duration)
-	// Get value by key and refresh this TTL of this [key, value]
 	Get(key K) (V, bool)
-	// Delete [key, value] by key
 	Del(key K)
 }
 
