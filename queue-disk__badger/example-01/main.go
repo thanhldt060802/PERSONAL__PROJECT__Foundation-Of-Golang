@@ -3,62 +3,65 @@ package main
 import (
 	"fmt"
 	"log"
-	"thanhldt060802/queue"
+	"thanhldt060802/queuedisk"
 	"time"
 )
 
-var QueueDiskInstance *queue.QueueDisk
+var EXAMPLE_NUM int = 1
+var EXAMPLES map[int]func()
+
+var QueueDisk queuedisk.IQueueDisk
+
+func init() {
+	EXAMPLES = map[int]func(){
+		2: Example2,
+	}
+
+	QueueDisk = queuedisk.NewQueueDisk("disk_storage")
+}
 
 func main() {
 
-	QueueDiskInstance = queue.NewQueueDisk("disk_storage")
-
-	data := make([]string, 10000)
-	for i := 0; i < len(data); i++ {
-		data[i] = fmt.Sprintf("message %v", i)
-	}
-	EnqueueDemo(data)
-
-	DequeueDemo(false)
-
-	QueueDiskInstance.Close()
+	EXAMPLES[EXAMPLE_NUM]()
 
 }
 
-func EnqueueDemo(data []string) {
-	count := 0
-	startTime := time.Now()
-	for _, element := range data {
-		if err := QueueDiskInstance.Enqueue(element); err != nil {
-			log.Fatal(err.Error())
+/*
+- Example for Enqueue() and Dequeue()
+- Calculate time for performance when handle 10000 element
+*/
+func Example2() {
+	{
+		data := make([]string, 10000)
+		for i := 0; i < len(data); i++ {
+			data[i] = fmt.Sprintf("message %v", i)
 		}
-		count++
-	}
-	endTime := time.Now()
-	log.Printf("Total time for enqueue %v elements: %v\n", count, endTime.Sub(startTime))
-}
 
-func DequeueDemo(printable bool) {
-	count := 0
-	startTime := time.Now()
-	if printable {
-		for {
-			value, err := QueueDiskInstance.Dequeue()
-			if err != nil {
-				break
+		count := 0
+		startTime := time.Now()
+		for _, element := range data {
+			if err := QueueDisk.Enqueue(element); err != nil {
+				log.Fatal(err.Error())
 			}
-			fmt.Println(value)
 			count++
 		}
-	} else {
+		endTime := time.Now()
+		log.Printf("Total time for enqueue %v elements: %v\n", count, endTime.Sub(startTime))
+	}
+
+	{
+		count := 0
+		startTime := time.Now()
 		for {
-			_, err := QueueDiskInstance.Dequeue()
+			_, err := QueueDisk.Dequeue()
 			if err != nil {
 				break
 			}
 			count++
 		}
+		endTime := time.Now()
+		log.Printf("Total time for dequeue %v elements: %v\n", count, endTime.Sub(startTime))
 	}
-	endTime := time.Now()
-	log.Printf("Total time for dequeue %v elements: %v\n", count, endTime.Sub(startTime))
+
+	QueueDisk.Close()
 }

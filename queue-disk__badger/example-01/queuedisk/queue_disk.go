@@ -1,4 +1,4 @@
-package queue
+package queuedisk
 
 import (
 	"errors"
@@ -14,10 +14,17 @@ type QueueDisk struct {
 	counter int64
 }
 
-func NewQueueDisk(path string) *QueueDisk {
+type IQueueDisk interface {
+	Enqueue(value string) error
+	Dequeue() (string, error)
+	Close() error
+}
+
+func NewQueueDisk(path string) IQueueDisk {
 	opts := badger.DefaultOptions(path)
-	// opts.WithSyncWrites(true)
+	// opts.WithSyncWrites(true)  // No effect on Window
 	opts.Logger = nil
+
 	db, err := badger.Open(opts)
 	if err != nil {
 		log.Fatal(err)
@@ -27,12 +34,12 @@ func NewQueueDisk(path string) *QueueDisk {
 		db:      db,
 		counter: 0,
 	}
-	go qd.GarbageCollection()
+	go qd.garbageCollection()
 
 	return qd
 }
 
-func (qd *QueueDisk) GarbageCollection() {
+func (qd *QueueDisk) garbageCollection() {
 	if err := qd.db.RunValueLogGC(0.5); err != nil && err != badger.ErrNoRewrite {
 		log.Printf("GC error: %v", err)
 	}
@@ -45,10 +52,6 @@ func (qd *QueueDisk) GarbageCollection() {
 			log.Printf("GC error: %v", err)
 		}
 	}
-}
-
-func (qd *QueueDisk) Close() error {
-	return qd.db.Close()
 }
 
 func (qd *QueueDisk) Enqueue(value string) error {
@@ -89,4 +92,8 @@ func (qd *QueueDisk) Dequeue() (string, error) {
 	})
 
 	return value, err
+}
+
+func (qd *QueueDisk) Close() error {
+	return qd.db.Close()
 }

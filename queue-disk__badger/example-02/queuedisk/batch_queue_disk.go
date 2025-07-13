@@ -1,4 +1,4 @@
-package queue
+package queuedisk
 
 import (
 	"errors"
@@ -21,7 +21,13 @@ type BatchQueueDisk struct {
 	batchDequeue []string
 }
 
-func NewBatchQueueDisk(path string, batchSize int) *BatchQueueDisk {
+type IBatchQueueDisk interface {
+	Enqueue(value string) error
+	Dequeue() ([]string, error)
+	Close() error
+}
+
+func NewBatchQueueDisk(path string, batchSize int) IBatchQueueDisk {
 	opts := badger.DefaultOptions(path)
 	// opts.WithSyncWrites(true)
 	opts.Logger = nil
