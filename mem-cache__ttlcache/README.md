@@ -1,6 +1,6 @@
 # GUIDES FOR TTLCACHE
 
-## Example 01 (See at example-01)
+## Guide 01 (See at guide-01)
 
 ### Guide for commonly used functions.
 
