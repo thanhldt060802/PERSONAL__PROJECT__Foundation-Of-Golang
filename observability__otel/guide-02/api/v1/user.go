@@ -16,44 +16,44 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type apiUser struct {
-	tracer      trace.Tracer
-	userService service.IUserService
+type apiPlayer struct {
+	tracer        trace.Tracer
+	playerService service.IPlayerService
 }
 
-func RegisterAPIExample(api hureg.APIGen, userService service.IUserService) {
-	handler := &apiUser{
-		tracer:      otel.Tracer("api/v1/user.go"),
-		userService: userService,
+func RegisterAPIExample(api hureg.APIGen, playerService service.IPlayerService) {
+	handler := &apiPlayer{
+		tracer:        otel.Tracer("api/v1/player.go"),
+		playerService: playerService,
 	}
 
-	apiGroup := api.AddBasePath("/user")
+	apiGroup := api.AddBasePath("/player")
 
 	hureg.Register(
 		apiGroup,
 		huma.Operation{
-			OperationID: "user-get-list",
+			OperationID: "player-get-list",
 			Method:      http.MethodGet,
 			Path:        "",
 			Security:    authMdw.DefaultAuthSecurity,
-			Description: "Get list users.",
+			Description: "Get list players.",
 			Middlewares: huma.Middlewares{authMdw.NewAuthMiddleware(api)},
 		},
-		handler.Gets,
+		handler.Get,
 	)
 }
 
-type GetsUserResponse struct {
+type GetsPlayerResponse struct {
 	Body struct {
-		Data []*model.User `json:"data" doc:"List user data"`
+		Data []*model.Player `json:"data" doc:"List player data"`
 	}
 }
 
-func (handler *apiUser) Gets(ctx context.Context, req *struct{}) (res *GetsUserResponse, err error) {
-	ctx, span1 := handler.tracer.Start(ctx, "Handler Gets()")
+func (handler *apiPlayer) Get(ctx context.Context, req *struct{}) (res *GetsPlayerResponse, err error) {
+	ctx, span1 := handler.tracer.Start(ctx, "Handler Get()")
 	defer span1.End()
 
-	data, err := handler.userService.Gets(ctx)
+	data, err := handler.playerService.Get(ctx)
 	if err != nil {
 		span1.SetStatus(codes.Error, err.Error())
 		return
@@ -61,7 +61,7 @@ func (handler *apiUser) Gets(ctx context.Context, req *struct{}) (res *GetsUserR
 
 	span1.SetAttributes(attribute.Int("total", len(data)))
 	span1.SetStatus(codes.Ok, "success")
-	res = &GetsUserResponse{}
+	res = &GetsPlayerResponse{}
 	res.Body.Data = data
 	return
 }

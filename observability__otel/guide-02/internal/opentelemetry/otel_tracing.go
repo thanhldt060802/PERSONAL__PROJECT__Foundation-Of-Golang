@@ -1,4 +1,4 @@
-package otelclient
+package opentelemetry
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
 
-func InitTracer() func() {
+func NewTracer() func() {
 	ctx := context.Background()
 
 	exporter, err := otlptracehttp.New(ctx,

@@ -1,8 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
-	"thanhldt060802/internal/otelclient"
+	"thanhldt060802/internal/opentelemetry"
 	"thanhldt060802/middleware/auth"
 	"thanhldt060802/repository"
 	"thanhldt060802/repository/db"
@@ -17,8 +18,11 @@ import (
 	apiV1 "thanhldt060802/api/v1"
 )
 
+var HOST string = "localhost"
+var PORT string = "8000"
+
 func main() {
-	shutdown := otelclient.InitTracer()
+	shutdown := opentelemetry.NewTracer()
 	defer shutdown()
 
 	router := server.NewHTTPServer()
@@ -39,7 +43,7 @@ func main() {
 			},
 			Servers: []*huma.Server{
 				{
-					URL:         "http://localhost:8000",
+					URL:         fmt.Sprintf("http://%v:%v", HOST, PORT),
 					Description: "Local Environment",
 					Variables:   map[string]*huma.ServerVariable{},
 				},
@@ -74,9 +78,9 @@ func main() {
 
 	auth.AuthMdw = auth.NewSimpleAuthMiddleware()
 
-	repository.UserRepo = db.NewUserRepo()
+	repository.PlayerRepo = db.NewPlayerRepo()
 
-	apiV1.RegisterAPIExample(api, service.NewUserService())
+	apiV1.RegisterAPIExample(api, service.NewPlayerService())
 
-	server.Start(router, "8000")
+	server.Start(router, PORT)
 }
