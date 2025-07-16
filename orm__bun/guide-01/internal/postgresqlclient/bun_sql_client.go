@@ -1,7 +1,6 @@
 package postgresqlclient
 
 import (
-	"crypto/tls"
 	"database/sql"
 	"fmt"
 
@@ -41,12 +40,11 @@ func NewPostgresClient(config PostgresConfig) IPostgresClientConn {
 
 func (c *PostgresClientConn) Connect() error {
 	postgresConn := pgdriver.NewConnector(
-		pgdriver.WithNetwork("tcp"),
 		pgdriver.WithAddr(fmt.Sprintf("%v:%v", c.Host, c.Port)),
-		pgdriver.WithTLSConfig(&tls.Config{InsecureSkipVerify: true}),
+		pgdriver.WithDatabase(c.Database),
 		pgdriver.WithUser(c.Username),
 		pgdriver.WithPassword(c.Password),
-		pgdriver.WithDatabase(c.Database),
+		pgdriver.WithNetwork("tcp"),
 		pgdriver.WithInsecure(true),
 	)
 
