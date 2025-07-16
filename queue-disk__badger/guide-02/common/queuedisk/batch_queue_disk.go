@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"thanhldt060802/model"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dgraph-io/badger/v4"
 )
+
+var BatchQueueDiskInstance1 IBatchQueueDisk[string]
+var BatchQueueDiskInstance2 IBatchQueueDisk[*model.DataStruct]
 
 type BatchQueueDisk[T any] struct {
 	db      *badger.DB

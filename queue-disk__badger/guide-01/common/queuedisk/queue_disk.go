@@ -5,11 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"thanhldt060802/model"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
 	log "github.com/sirupsen/logrus"
 )
+
+var QueueDiskInstance1 IQueueDisk[string]
+var QueueDiskInstance2 IQueueDisk[*model.DataStruct]
 
 type QueueDisk[T any] struct {
 	db      *badger.DB

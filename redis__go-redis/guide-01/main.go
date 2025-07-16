@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"thanhldt060802/redisclient"
+	"thanhldt060802/common/pubsub"
+	"thanhldt060802/internal/redisclient"
+	"thanhldt060802/model"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 )
 
 var EXAMPLE_NUM = 2
@@ -27,26 +28,23 @@ func main() {
 
 }
 
-/*
-- Example for Subscribe() and Publish()
-
-- Subscribe() will listen for Payloads sent over TCP Socket
-
-- Publish() will send Payloads to TCP Socket
-*/
+// Example for Subscribe() and Publish().
+// Subscribe() will listen for Payloads sent over TCP Socket.
+// Publish() will send Payloads to TCP Socket.
 func Example1() {
-	redisClient := redisclient.NewRedisClient(&redis.Options{
-		Addr:     "localhost:6379",
+	redisclient.RedisClientConnInstance = redisclient.NewRedisClient(redisclient.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Database: 0,
 		Password: "12345678",
-		DB:       0,
 	})
-	redisPub := redisclient.NewRedisPub[string](redisClient)
-	redisSub := redisclient.NewRedisSub[string](redisClient)
+	pubsub.RedisPubInstance1 = pubsub.NewRedisPub[string](redisclient.RedisClientConnInstance.GetClient())
+	pubsub.RedisSubInstance1 = pubsub.NewRedisSub[string](redisclient.RedisClientConnInstance.GetClient())
 
 	go func() {
 		count := 0
 
-		redisSub.Subscribe(context.Background(), "my-channel", func(data string) {
+		pubsub.RedisSubInstance1.Subscribe(context.Background(), "my-channel", func(data string) {
 			fmt.Println(data)
 
 			count++
@@ -61,7 +59,7 @@ func Example1() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 			data := fmt.Sprintf("my-payload-%v", i)
-			if err := redisPub.Publish(ctx, "my-channel", data); err != nil {
+			if err := pubsub.RedisPubInstance1.Publish(ctx, "my-channel", data); err != nil {
 				cancel()
 				return
 			}
@@ -74,39 +72,21 @@ func Example1() {
 	select {}
 }
 
-/*
-- Ref: Example2()
-
-- Using data struct
-*/
+// Ref: Example1(), use data struct
 func Example2() {
-	type SubDataStruct struct {
-		Field1 string `json:"field1"`
-		Field2 int32  `json:"field2"`
-		Field3 int64  `json:"field3"`
-	}
-	type DataStruct struct {
-		Field1 string        `json:"field1"`
-		Field2 int32         `json:"field2"`
-		Field3 int64         `json:"field3"`
-		Field4 float32       `json:"field4"`
-		Field5 float64       `json:"field5"`
-		Field6 time.Time     `json:"field6"`
-		Field7 SubDataStruct `json:"field7"`
-	}
-
-	redisClient := redisclient.NewRedisClient(&redis.Options{
-		Addr:     "localhost:6379",
+	redisclient.RedisClientConnInstance = redisclient.NewRedisClient(redisclient.RedisConfig{
+		Host:     "localhost",
+		Port:     6379,
+		Database: 0,
 		Password: "12345678",
-		DB:       0,
 	})
-	redisPub := redisclient.NewRedisPub[*DataStruct](redisClient)
-	redisSub := redisclient.NewRedisSub[*DataStruct](redisClient)
+	pubsub.RedisPubInstance2 = pubsub.NewRedisPub[*model.DataStruct](redisclient.RedisClientConnInstance.GetClient())
+	pubsub.RedisSubInstance2 = pubsub.NewRedisSub[*model.DataStruct](redisclient.RedisClientConnInstance.GetClient())
 
 	go func() {
 		count := 0
 
-		redisSub.Subscribe(context.Background(), "my-channel", func(data *DataStruct) {
+		pubsub.RedisSubInstance2.Subscribe(context.Background(), "my-channel", func(data *model.DataStruct) {
 			fmt.Println(*data)
 
 			count++
@@ -120,20 +100,20 @@ func Example2() {
 		for i := 1; ; i++ {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
-			data := DataStruct{
+			data := model.DataStruct{
 				Field1: uuid.New().String(),
 				Field2: rand.Int32(),
 				Field3: rand.Int64(),
 				Field4: rand.Float32(),
 				Field5: rand.Float64(),
 				Field6: time.Now(),
-				Field7: SubDataStruct{
+				Field7: model.SubDataStruct{
 					Field1: uuid.New().String(),
 					Field2: rand.Int32(),
 					Field3: rand.Int64(),
 				},
 			}
-			if err := redisPub.Publish(ctx, "my-channel", &data); err != nil {
+			if err := pubsub.RedisPubInstance2.Publish(ctx, "my-channel", &data); err != nil {
 				cancel()
 				return
 			}

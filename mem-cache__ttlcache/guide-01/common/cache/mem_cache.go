@@ -1,12 +1,16 @@
-package memcache
+package cache
 
 import (
 	"context"
+	"thanhldt060802/model"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
 	log "github.com/sirupsen/logrus"
 )
+
+var MemCacheInstance1 IMemCache[string, string]
+var MemCacheInstance2 IMemCache[string, *model.DataStruct]
 
 type MemCache[K comparable, V any] struct {
 	cache *ttlcache.Cache[K, V]
@@ -24,18 +28,18 @@ func NewMemCache[K comparable, V any](defaultTTL time.Duration) IMemCache[K, V] 
 		ttlcache.WithTTL[K, V](defaultTTL),
 	)
 	cache.OnInsertion(func(ctx context.Context, item *ttlcache.Item[K, V]) {
-		log.Infof("memcache: inserted [%v, %v], expires at %v", item.Key(), item.Value(), item.ExpiresAt())
+		log.Infof("Memcache: inserted [%v, %v], expires at %v", item.Key(), item.Value(), item.ExpiresAt())
 	})
 	cache.OnEviction(func(ctx context.Context, reason ttlcache.EvictionReason, item *ttlcache.Item[K, V]) {
 		switch reason {
 		case ttlcache.EvictionReasonDeleted:
-			log.Infof("memcache-deleted: removed [%v, %v]", item.Key(), item.Value())
+			log.Infof("Memcache-deleted: Removed [%v, %v]", item.Key(), item.Value())
 		case ttlcache.EvictionReasonCapacityReached:
-			log.Infof("memcache-capacity-reached: removed [%v, %v]", item.Key(), item.Value())
+			log.Infof("Memcache-capacity-reached: Removed [%v, %v]", item.Key(), item.Value())
 		case ttlcache.EvictionReasonExpired:
-			log.Infof("memcache-expired: removed [%v, %v]", item.Key(), item.Value())
+			log.Infof("Memcache-expired: Removed [%v, %v]", item.Key(), item.Value())
 		case ttlcache.EvictionReasonMaxCostExceeded:
-			log.Infof("memcache-max-cost-exceeded: removed [%v, %v]", item.Key(), item.Value())
+			log.Infof("Memcache-max-cost-exceeded: Removed [%v, %v]", item.Key(), item.Value())
 		}
 	})
 

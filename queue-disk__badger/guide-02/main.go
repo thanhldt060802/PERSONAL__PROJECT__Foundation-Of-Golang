@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"math/rand/v2"
-	"thanhldt060802/queuedisk"
+	"thanhldt060802/common/queuedisk"
+	"thanhldt060802/model"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -28,22 +29,20 @@ func main() {
 
 }
 
-/*
-- Example for Enqueue() and Dequeue()
-*/
+// Example for Enqueue() and Dequeue().
 func Example1() {
-	queueDisk := queuedisk.NewBatchQueueDisk[string]("disk_storage", 8)
+	queuedisk.BatchQueueDiskInstance1 = queuedisk.NewBatchQueueDisk[string]("disk_storage", 8)
 
 	for i := 1; i <= 30; i++ {
 		dataEnq := fmt.Sprintf("message %v", i)
-		if err := queueDisk.Enqueue(dataEnq); err != nil {
+		if err := queuedisk.BatchQueueDiskInstance1.Enqueue(dataEnq); err != nil {
 			log.Errorf("Enqueue failed: %v", err.Error())
 			break
 		}
 	}
 
 	for {
-		dataDeqs, err := queueDisk.Dequeue()
+		dataDeqs, err := queuedisk.BatchQueueDiskInstance1.Dequeue()
 		if err != nil {
 			log.Errorf("Dequeue failed: %v", err.Error())
 			break
@@ -53,54 +52,35 @@ func Example1() {
 		}
 	}
 
-	queueDisk.Close()
+	queuedisk.BatchQueueDiskInstance1.Close()
 }
 
-/*
-- Ref: Example1
-
-- Using data struct
-*/
+// Ref: Example1(), use data struct.
 func Example2() {
-	type SubDataStruct struct {
-		Field1 string `json:"field1"`
-		Field2 int32  `json:"field2"`
-		Field3 int64  `json:"field3"`
-	}
-	type DataStruct struct {
-		Field1 string        `json:"field1"`
-		Field2 int32         `json:"field2"`
-		Field3 int64         `json:"field3"`
-		Field4 float32       `json:"field4"`
-		Field5 float64       `json:"field5"`
-		Field6 time.Time     `json:"field6"`
-		Field7 SubDataStruct `json:"field7"`
-	}
-
-	queueDisk := queuedisk.NewBatchQueueDisk[*DataStruct]("disk_storage", 8)
+	queuedisk.BatchQueueDiskInstance2 = queuedisk.NewBatchQueueDisk[*model.DataStruct]("disk_storage", 8)
 
 	for i := 1; i <= 30; i++ {
-		dataEnq := DataStruct{
+		dataEnq := model.DataStruct{
 			Field1: uuid.New().String(),
 			Field2: rand.Int32(),
 			Field3: rand.Int64(),
 			Field4: rand.Float32(),
 			Field5: rand.Float64(),
 			Field6: time.Now(),
-			Field7: SubDataStruct{
+			Field7: model.SubDataStruct{
 				Field1: uuid.New().String(),
 				Field2: rand.Int32(),
 				Field3: rand.Int64(),
 			},
 		}
-		if err := queueDisk.Enqueue(&dataEnq); err != nil {
+		if err := queuedisk.BatchQueueDiskInstance2.Enqueue(&dataEnq); err != nil {
 			log.Errorf("Enqueue failed: %v", err.Error())
 			break
 		}
 	}
 
 	for {
-		dataDeqs, err := queueDisk.Dequeue()
+		dataDeqs, err := queuedisk.BatchQueueDiskInstance2.Dequeue()
 		if err != nil {
 			log.Errorf("Dequeue failed: %v", err.Error())
 			break
@@ -110,16 +90,13 @@ func Example2() {
 		}
 	}
 
-	queueDisk.Close()
+	queuedisk.BatchQueueDiskInstance2.Close()
 }
 
-/*
-- Example for Enqueue() and Dequeue()
-
-- Calculate time for performance when handle 10000 element
-*/
+// Example for Enqueue() and Dequeue().
+// Calculate time for performance when handle 10000 element.
 func Example3() {
-	batchQueueDisk := queuedisk.NewBatchQueueDisk[string]("disk_storage", 33)
+	queuedisk.BatchQueueDiskInstance1 = queuedisk.NewBatchQueueDisk[string]("disk_storage", 33)
 
 	{
 		dataEnqs := make([]string, 10000)
@@ -130,7 +107,7 @@ func Example3() {
 		count := 0
 		startTime := time.Now()
 		for _, dataEnq := range dataEnqs {
-			if err := batchQueueDisk.Enqueue(dataEnq); err != nil {
+			if err := queuedisk.BatchQueueDiskInstance1.Enqueue(dataEnq); err != nil {
 				log.Errorf("Enqueue failed: %v", err.Error())
 				break
 			}
@@ -144,7 +121,7 @@ func Example3() {
 		count := 0
 		startTime := time.Now()
 		for {
-			dataDeqs, err := batchQueueDisk.Dequeue()
+			dataDeqs, err := queuedisk.BatchQueueDiskInstance1.Dequeue()
 			if err != nil {
 				log.Errorf("Dequeue failed: %v", err.Error())
 				break
@@ -155,5 +132,5 @@ func Example3() {
 		log.Printf("Total time for dequeue %v elements: %v", count, endTime.Sub(startTime))
 	}
 
-	batchQueueDisk.Close()
+	queuedisk.BatchQueueDiskInstance1.Close()
 }

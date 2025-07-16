@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"math/rand/v2"
-	"thanhldt060802/memcache"
+	"thanhldt060802/common/cache"
+	"thanhldt060802/model"
 	"time"
 
 	"github.com/google/uuid"
@@ -30,20 +31,16 @@ func main() {
 
 }
 
-/*
-- Example for Set() and Get()
-
-- Element is setted by Set() with default TTL is 3 seconds
-
-- Get() will be called per 1 second (is less than defaultTTL)
-*/
+// Example for Set() and Get().
+// Element is setted by Set() with default TTL is 3 seconds.
+// Get() will be called per 1 second (is less than defaultTTL).
 func Example1() {
-	memCache := memcache.NewMemCache[string, string](3 * time.Second)
+	cache.MemCacheInstance1 = cache.NewMemCache[string, string](3 * time.Second)
 
-	memCache.Set("my-key", "my-value")
+	cache.MemCacheInstance1.Set("my-key", "my-value")
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance1.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -54,20 +51,16 @@ func Example1() {
 	}
 }
 
-/*
-- Example for Set() and Get()
-
-- Element is setted by Set() with default TTL is 3 seconds
-
-- Get() will be called per 5 seconds (is greater defaultTTL)
-*/
+// Example for Set() and Get().
+// Element is setted by Set() with default TTL is 3 seconds.
+// Get() will be called per 5 seconds (is greater defaultTTL).
 func Example2() {
-	memCache := memcache.NewMemCache[string, string](3 * time.Second)
+	cache.MemCacheInstance1 = cache.NewMemCache[string, string](3 * time.Second)
 
-	memCache.Set("my-key", "my-value")
+	cache.MemCacheInstance1.Set("my-key", "my-value")
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance1.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -78,20 +71,16 @@ func Example2() {
 	}
 }
 
-/*
-- Test for SetTTL() and Get()
-
-- Element is setted by SetTTL() with other TTL is 5 seconds
-
-- Get() will be called per 1 second (is less than setted TTL)
-*/
+// Example for SetTTL() and Get()
+// Element is setted by SetTTL() with other TTL is 5 seconds
+// Get() will be called per 1 second (is less than setted TTL)
 func Example3() {
-	memCache := memcache.NewMemCache[string, string](3 * time.Second)
+	cache.MemCacheInstance1 = cache.NewMemCache[string, string](3 * time.Second)
 
-	memCache.SetTTL("my-key", "my-value", 5*time.Second)
+	cache.MemCacheInstance1.SetTTL("my-key", "my-value", 5*time.Second)
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance1.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -102,22 +91,17 @@ func Example3() {
 	}
 }
 
-/*
-- Test for SetTTL() and Get()
-
-- Element is setted by SetTTL() with other TTL is 6 seconds
-
-- Get() will be called per 4 second (is less than setted TTL)
-
-- It means the default TLL is no effect to other setted TTL for element
-*/
+// Example for SetTTL() and Get().
+// Element is setted by SetTTL() with other TTL is 6 seconds.
+// Get() will be called per 4 second (is less than setted TTL).
+// It means the default TLL is no effect to other setted TTL for element.
 func Example4() {
-	memCache := memcache.NewMemCache[string, string](3 * time.Second)
+	cache.MemCacheInstance1 = cache.NewMemCache[string, string](3 * time.Second)
 
-	memCache.SetTTL("my-key", "my-value", 6*time.Second)
+	cache.MemCacheInstance1.SetTTL("my-key", "my-value", 6*time.Second)
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance1.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -128,20 +112,16 @@ func Example4() {
 	}
 }
 
-/*
-- Test for SetTTL() and Get()
-
-- Element is setted by SetTTL() with other TTL is 6 seconds
-
-- Get() will be called per 10 second (is greater setted TTL)
-*/
+// Example for SetTTL() and Get().
+// Element is setted by SetTTL() with other TTL is 6 seconds.
+// Get() will be called per 10 second (is greater setted TTL).
 func Example5() {
-	memCache := memcache.NewMemCache[string, string](3 * time.Second)
+	cache.MemCacheInstance1 = cache.NewMemCache[string, string](3 * time.Second)
 
-	memCache.SetTTL("my-key", "my-value", 6*time.Second)
+	cache.MemCacheInstance1.SetTTL("my-key", "my-value", 6*time.Second)
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance1.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -152,23 +132,18 @@ func Example5() {
 	}
 }
 
-/*
-- Test for Set(), Get() and Del()
-
-- Element is setted by Set() with default TTL is 3 seconds
-
-- Get() will be called per 1 second (is less than defaultTTL)
-
-- When Get() is called 5 times, the element will be deleted
-*/
+// Example for Set(), Get() and Del().
+// Element is setted by Set() with default TTL is 3 seconds.
+// Get() will be called per 1 second (is less than defaultTTL).
+// When Get() is called 5 times, the element will be deleted.
 func Example6() {
-	memCache := memcache.NewMemCache[string, string](3 * time.Second)
+	cache.MemCacheInstance1 = cache.NewMemCache[string, string](3 * time.Second)
 
-	memCache.Set("my-key", "my-value")
+	cache.MemCacheInstance1.Set("my-key", "my-value")
 	count := 0
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance1.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -177,53 +152,34 @@ func Example6() {
 
 		count++
 		if count == 5 {
-			memCache.Del("my-key")
+			cache.MemCacheInstance1.Del("my-key")
 		}
 		time.Sleep(1 * time.Second)
 	}
 }
 
-/*
-- Ref: Example6()
-
-- Using data struct
-*/
+// Ref: Example6(), use data struct.
 func Example7() {
-	type SubDataStruct struct {
-		Field1 string `json:"field1"`
-		Field2 int32  `json:"field2"`
-		Field3 int64  `json:"field3"`
-	}
-	type DataStruct struct {
-		Field1 string        `json:"field1"`
-		Field2 int32         `json:"field2"`
-		Field3 int64         `json:"field3"`
-		Field4 float32       `json:"field4"`
-		Field5 float64       `json:"field5"`
-		Field6 time.Time     `json:"field6"`
-		Field7 SubDataStruct `json:"field7"`
-	}
+	cache.MemCacheInstance2 = cache.NewMemCache[string, *model.DataStruct](3 * time.Second)
 
-	memCache := memcache.NewMemCache[string, *DataStruct](3 * time.Second)
-
-	data := DataStruct{
+	data := model.DataStruct{
 		Field1: uuid.New().String(),
 		Field2: rand.Int32(),
 		Field3: rand.Int64(),
 		Field4: rand.Float32(),
 		Field5: rand.Float64(),
 		Field6: time.Now(),
-		Field7: SubDataStruct{
+		Field7: model.SubDataStruct{
 			Field1: uuid.New().String(),
 			Field2: rand.Int32(),
 			Field3: rand.Int64(),
 		},
 	}
-	memCache.Set("my-key", &data)
+	cache.MemCacheInstance2.Set("my-key", &data)
 	count := 0
 
 	for {
-		value, ok := memCache.Get("my-key")
+		value, ok := cache.MemCacheInstance2.Get("my-key")
 		if !ok {
 			fmt.Println("my-key doesn't exists in cache")
 			return
@@ -232,7 +188,7 @@ func Example7() {
 
 		count++
 		if count == 5 {
-			memCache.Del("my-key")
+			cache.MemCacheInstance2.Del("my-key")
 		}
 		time.Sleep(1 * time.Second)
 	}
