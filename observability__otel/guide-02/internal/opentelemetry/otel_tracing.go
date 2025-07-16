@@ -2,8 +2,9 @@ package opentelemetry
 
 import (
 	"context"
+	"fmt"
 	"log"
-	server "thanhldt060802/server/http"
+	"thanhldt060802/appconfig"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -12,12 +13,17 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
 
-func NewTracer() func() {
+type TracerEndPointConfig struct {
+	Host string
+	Port int
+}
+
+func NewTracer(config TracerEndPointConfig) func() {
 	ctx := context.Background()
 
 	exporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithInsecure(),
-		otlptracehttp.WithEndpoint("localhost:4318"), // Jaeger HTTP OTLP
+		otlptracehttp.WithEndpoint(fmt.Sprintf("%v:%v", config.Host, config.Port)),
 	)
 	if err != nil {
 		log.Fatalf("failed to create exporter: %v", err.Error())
@@ -25,7 +31,7 @@ func NewTracer() func() {
 
 	resource := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceName(server.SERVICE_NAME),
+		semconv.ServiceName(appconfig.AppConfig.AppName),
 	)
 
 	tracerProvider := trace.NewTracerProvider(

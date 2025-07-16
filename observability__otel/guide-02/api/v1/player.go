@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"net/http"
+	"thanhldt060802/common/tracer"
 	"thanhldt060802/model"
 	"thanhldt060802/service"
 
@@ -32,36 +33,39 @@ func RegisterAPIExample(api hureg.APIGen, playerService service.IPlayerService) 
 	hureg.Register(
 		apiGroup,
 		huma.Operation{
-			OperationID: "player-get-list",
+			OperationID: "player-get-by-id",
 			Method:      http.MethodGet,
-			Path:        "",
+			Path:        "/{player_uuid}",
 			Security:    authMdw.DefaultAuthSecurity,
-			Description: "Get list players.",
+			Description: "Get player by id.",
 			Middlewares: huma.Middlewares{authMdw.NewAuthMiddleware(api)},
 		},
-		handler.Get,
+		handler.GetById,
 	)
 }
 
-type GetsPlayerResponse struct {
+type GetPlayerByIdResponse struct {
 	Body struct {
-		Data []*model.Player `json:"data" doc:"List player data"`
+		Data *model.Player `json:"data" doc:"Player data"`
 	}
 }
 
-func (handler *apiPlayer) Get(ctx context.Context, req *struct{}) (res *GetsPlayerResponse, err error) {
-	ctx, span1 := handler.tracer.Start(ctx, "Handler Get()")
-	defer span1.End()
+func (handler *apiPlayer) GetById(ctx context.Context, req *struct {
+	PlayerUuid string `path:"player_uuid" format:"uuid" doc:"Player uuid"`
+}) (res *GetPlayerByIdResponse, err error) {
+	ctx, span := tracer.StartSpan(ctx, "api/v1/player.go", "Handler.GetById")
+	defer span.End()
 
-	data, err := handler.playerService.Get(ctx)
+	player, err := handler.playerService.GetById(ctx, req.PlayerUuid)
 	if err != nil {
-		span1.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return
 	}
+	span.SetAttributes(attribute.String("player.player_uuid", player.PlayerUuid))
 
-	span1.SetAttributes(attribute.Int("total", len(data)))
-	span1.SetStatus(codes.Ok, "success")
-	res = &GetsPlayerResponse{}
-	res.Body.Data = data
+	res = &GetPlayerByIdResponse{}
+	res.Body.Data = player
+	span.SetStatus(codes.Ok, "success")
 	return
 }
