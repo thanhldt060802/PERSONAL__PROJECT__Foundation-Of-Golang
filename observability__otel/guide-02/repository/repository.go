@@ -8,7 +8,7 @@ import (
 	"github.com/uptrace/bun/schema"
 )
 
-func CreateTable(client sqlclient.IBunSqlClientConn, ctx context.Context, table interface{}) error {
+func CreateTable(client sqlclient.ISqlClientConn, ctx context.Context, table interface{}) error {
 	query := client.GetDB().NewCreateTable().Model(table).IfNotExists()
 	value, _ := query.AppendQuery(schema.NewFormatter(query.Dialect()), nil)
 	queryStr := string(value)
@@ -20,7 +20,7 @@ func CreateTable(client sqlclient.IBunSqlClientConn, ctx context.Context, table 
 	return err
 }
 
-func DropTable(client sqlclient.IBunSqlClientConn, ctx context.Context, table interface{}) error {
+func DropTable(client sqlclient.ISqlClientConn, ctx context.Context, table interface{}) error {
 	_, err := client.GetDB().NewDropTable().Model(table).IfExists().Exec(ctx)
 	return err
 }

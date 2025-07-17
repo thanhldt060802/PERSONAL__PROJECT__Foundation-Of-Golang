@@ -10,13 +10,13 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 )
 
-var BunSqlClientConnInstance IBunSqlClientConn
+var SqlClientConnInstance ISqlClientConn
 
-type IBunSqlClientConn interface {
+type ISqlClientConn interface {
 	GetDB() *bun.DB
 }
 
-type BunSqlConfig struct {
+type SqlConfig struct {
 	Host     string
 	Port     int
 	Database string
@@ -24,21 +24,21 @@ type BunSqlConfig struct {
 	Password string
 }
 
-type BunSqlClientConn struct {
-	BunSqlConfig
+type SqlClientConn struct {
+	SqlConfig
 	DB *bun.DB
 }
 
-func NewBunSqlClient(config BunSqlConfig) IBunSqlClientConn {
-	client := &BunSqlClientConn{}
-	client.BunSqlConfig = config
+func NewSqlClient(config SqlConfig) ISqlClientConn {
+	client := &SqlClientConn{}
+	client.SqlConfig = config
 	if err := client.Connect(); err != nil {
 		log.Fatalf("Ping to postgres failed: %v", err.Error())
 	}
 	return client
 }
 
-func (c *BunSqlClientConn) Connect() error {
+func (c *SqlClientConn) Connect() error {
 	postgresConn := pgdriver.NewConnector(
 		pgdriver.WithAddr(fmt.Sprintf("%v:%v", c.Host, c.Port)),
 		pgdriver.WithDatabase(c.Database),
@@ -57,6 +57,6 @@ func (c *BunSqlClientConn) Connect() error {
 	return nil
 }
 
-func (c *BunSqlClientConn) GetDB() *bun.DB {
+func (c *SqlClientConn) GetDB() *bun.DB {
 	return c.DB
 }

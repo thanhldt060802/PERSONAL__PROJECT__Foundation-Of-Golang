@@ -22,7 +22,7 @@ func main() {
 	})
 	defer shutdown()
 
-	sqlclient.BunSqlClientConnInstance = sqlclient.NewBunSqlClient(sqlclient.BunSqlConfig{
+	sqlclient.SqlClientConnInstance = sqlclient.NewSqlClient(sqlclient.SqlConfig{
 		Host:     appconfig.AppConfig.PostgresHost,
 		Port:     appconfig.AppConfig.PostgresPort,
 		Database: appconfig.AppConfig.PostgresDatabase,

@@ -32,13 +32,13 @@ func NewPlayerRepo() repository.IPlayerRepo {
 }
 
 func (repo *PlayerRepo) DeleteTable(ctx context.Context) {
-	if err := repository.DropTable(sqlclient.BunSqlClientConnInstance, ctx, (*model.Player)(nil)); err != nil {
+	if err := repository.DropTable(sqlclient.SqlClientConnInstance, ctx, (*model.Player)(nil)); err != nil {
 		panic(err)
 	}
 }
 
 func (repo *PlayerRepo) InitTable(ctx context.Context) {
-	if err := repository.CreateTable(sqlclient.BunSqlClientConnInstance, ctx, (*model.Player)(nil)); err != nil {
+	if err := repository.CreateTable(sqlclient.SqlClientConnInstance, ctx, (*model.Player)(nil)); err != nil {
 		panic(err)
 	}
 }
@@ -46,7 +46,7 @@ func (repo *PlayerRepo) InitTable(ctx context.Context) {
 func (repo *PlayerRepo) GenerateData(ctx context.Context) {
 	classes := []string{"Assassin", "Warrior", "Mage", "Gunner"}
 
-	if err := sqlclient.BunSqlClientConnInstance.GetDB().RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
+	if err := sqlclient.SqlClientConnInstance.GetDB().RunInTx(ctx, &sql.TxOptions{}, func(ctx context.Context, tx bun.Tx) error {
 		for i := 1; i <= 30; i++ {
 			user := model.Player{
 				PlayerUuid: uuid.New().String(),
@@ -72,7 +72,7 @@ func (repo *PlayerRepo) GetById(ctx context.Context, playUuid string) (*model.Pl
 
 	player := new(model.Player)
 
-	query := sqlclient.BunSqlClientConnInstance.GetDB().NewSelect().Model(player).
+	query := sqlclient.SqlClientConnInstance.GetDB().NewSelect().Model(player).
 		Where("player_uuid = ?", playUuid)
 
 	err := query.Scan(ctx)
