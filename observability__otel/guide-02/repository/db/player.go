@@ -75,6 +75,7 @@ func (repo *PlayerRepo) GetById(ctx context.Context, playUuid string) (*model.Pl
 	query := sqlclient.SqlClientConnInstance.GetDB().NewSelect().Model(player).
 		Where("player_uuid = ?", playUuid)
 
+	span.AddEvent("Fetch player from DB")
 	err := query.Scan(ctx)
 	if err != nil {
 		span.RecordError(err)
