@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"thanhldt060802/common/pubsub"
 	"thanhldt060802/common/tracer"
-	"thanhldt060802/internal/redisclient"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -26,33 +26,30 @@ func NewPlayerService() IPlayerService {
 }
 
 func (s *PlayerService) GetById(ctx context.Context, playUuid string) (string, error) {
-	_, span1 := tracer.StartSpan(ctx, "service/player.go", "Service.GetById")
+	_, span1 := tracer.StartSpanInternal(ctx, "service/player.go", "Service.GetById")
 	defer span1.End()
 
 	// Part 1 - Start
 
 	time.Sleep(1 * time.Second)
 
-	pubCtx, span2 := tracer.StartSpan(ctx, "service/player.go", "RedisPubSub.Publish")
+	pubCtx, span2 := tracer.StartSpanInternal(ctx, "service/player.go", "RedisPubSub.Publish")
 
-	carrier := propagation.MapCarrier{}
-	otel.GetTextMapPropagator().Inject(pubCtx, carrier)
-
-	envelope := redisclient.RedisEnvelope{
-		TraceContext: carrier,
+	msgTrace := tracer.MessageTracing{
+		TraceContext: propagation.MapCarrier{},
 		Payload:      playUuid,
 	}
 
-	redisPub := redisclient.NewRedisPub[*redisclient.RedisEnvelope](redisclient.RedisClient.GetClient())
+	otel.GetTextMapPropagator().Inject(pubCtx, msgTrace.TraceContext)
 
 	span2.SetAttributes(attribute.String("redis.pub_channel", "test.trace.pubsub"))
-	if err := redisPub.Publish(ctx, "test.trace.pubsub", &envelope); err != nil {
+	if err := pubsub.RedisPubInstance.Publish(ctx, "test.trace.pubsub", &msgTrace); err != nil {
 		span2.RecordError(err)
 		span2.SetStatus(codes.Error, err.Error())
 		span2.End()
 		return "", err
 	}
-	payloadBytes, _ := json.Marshal(envelope.Payload)
+	payloadBytes, _ := json.Marshal(msgTrace.Payload)
 	span2.SetAttributes(attribute.String("test.trace.pubsub.payload", string(payloadBytes)))
 
 	span2.SetStatus(codes.Ok, "success")
@@ -63,8 +60,6 @@ func (s *PlayerService) GetById(ctx context.Context, playUuid string) (string, e
 	// Part 2 - Start
 
 	time.Sleep(1 * time.Second)
-
-	span1.SetAttributes(attribute.String("other.action", "action.result"))
 
 	// Part 2 - End
 

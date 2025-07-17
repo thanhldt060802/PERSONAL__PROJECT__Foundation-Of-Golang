@@ -7,7 +7,6 @@ import (
 	"thanhldt060802/repository"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
 
@@ -24,7 +23,7 @@ func NewPlayerService() IPlayerService {
 }
 
 func (s *PlayerService) GetById(ctx context.Context, playUuid string) (*model.Player, error) {
-	ctx, span := tracer.StartSpan(ctx, "service/player.go", "Service.GetById")
+	ctx, span := tracer.StartSpanInternal(ctx, "service/player.go", "Service.GetById")
 	defer span.End()
 
 	// Part 1 - Start
@@ -37,15 +36,12 @@ func (s *PlayerService) GetById(ctx context.Context, playUuid string) (*model.Pl
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	span.SetAttributes(attribute.String("player.player_uuid", player.PlayerUuid))
 
 	// Part 1 - End
 
 	// Part 2 - Start
 
 	time.Sleep(1 * time.Second)
-
-	span.SetAttributes(attribute.String("other.action", "action.result"))
 
 	// Part 2 - End
 

@@ -12,7 +12,6 @@ import (
 	"github.com/cardinalby/hureg"
 	"github.com/danielgtaylor/huma/v2"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -53,7 +52,7 @@ type GetPlayerByIdResponse struct {
 func (handler *apiPlayer) GetById(ctx context.Context, req *struct {
 	PlayerUuid string `path:"player_uuid" format:"uuid" doc:"Player uuid"`
 }) (res *GetPlayerByIdResponse, err error) {
-	ctx, span := tracer.StartSpan(ctx, "api/v1/player.go", "Handler.GetById")
+	ctx, span := tracer.StartSpanInternal(ctx, "api/v1/player.go", "Handler.GetById")
 	defer span.End()
 
 	player, err := handler.playerService.GetById(ctx, req.PlayerUuid)
@@ -62,7 +61,6 @@ func (handler *apiPlayer) GetById(ctx context.Context, req *struct {
 		span.SetStatus(codes.Error, err.Error())
 		return
 	}
-	span.SetAttributes(attribute.String("player.player_uuid", player.PlayerUuid))
 
 	res = &GetPlayerByIdResponse{}
 	res.Body.Data = player

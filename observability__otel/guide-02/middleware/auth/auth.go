@@ -45,7 +45,7 @@ func NewAuthMiddleware(api hureg.APIGen) func(ctx huma.Context, next func(huma.C
 }
 
 func HumaAuthMiddleware(api hureg.APIGen, ctx huma.Context, next func(huma.Context)) {
-	tmpCtx, span := tracer.StartSpan(ctx.Context(), "middleware/auth/auth.go", "Middleware.HumaAuthMiddleware")
+	tmpCtx, span := tracer.StartSpanInternal(ctx.Context(), "middleware/auth/auth.go", "Middleware.HumaAuthMiddleware")
 	defer span.End()
 
 	authHeaderValue := ctx.Header("Authorization")

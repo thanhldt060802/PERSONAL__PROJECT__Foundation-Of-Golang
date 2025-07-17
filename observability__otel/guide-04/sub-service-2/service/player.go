@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"thanhldt060802/common/pubsub"
 	"thanhldt060802/common/tracer"
-	"thanhldt060802/internal/redisclient"
 	"thanhldt060802/repository"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
 )
 
 type (
@@ -28,13 +26,9 @@ func NewPlayerService() IPlayerService {
 }
 
 func (s *PlayerService) InitSubscriber() {
-	redisSub := redisclient.NewRedisSub[*redisclient.RedisEnvelope](redisclient.RedisClient.GetClient())
-
-	redisSub.Subscribe(context.Background(), "test.trace.pubsub", func(data *redisclient.RedisEnvelope) {
-		carrier := propagation.MapCarrier(data.TraceContext)
-		pubCtx := otel.GetTextMapPropagator().Extract(context.Background(), carrier)
-
-		subCtx, span := tracer.StartSpan(pubCtx, "service/player.go", "RedisPubSub.Subscribe")
+	pubsub.RedisSubInstance.Subscribe(context.Background(), "test.trace.pubsub", func(data *tracer.MessageTracing) {
+		pubCtx := data.ExtractTraceContext()
+		subCtx, span := tracer.StartSpanInternal(pubCtx, "service/player.go", "RedisPubSub.Subscribe")
 		defer span.End()
 
 		span.SetAttributes(attribute.String("redis.sub_channel", "test.trace.pubsub"))

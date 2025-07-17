@@ -3,14 +3,12 @@ package repository
 import (
 	"context"
 	"strings"
-	"thanhldt060802/internal/postgresqlclient"
+	"thanhldt060802/internal/sqlclient"
 
 	"github.com/uptrace/bun/schema"
 )
 
-var BunSqlClient postgresqlclient.IBunSqlClientConn
-
-func CreateTable(client postgresqlclient.IBunSqlClientConn, ctx context.Context, table interface{}) error {
+func CreateTable(client sqlclient.IBunSqlClientConn, ctx context.Context, table interface{}) error {
 	query := client.GetDB().NewCreateTable().Model(table).IfNotExists()
 	value, _ := query.AppendQuery(schema.NewFormatter(query.Dialect()), nil)
 	queryStr := string(value)
@@ -22,7 +20,7 @@ func CreateTable(client postgresqlclient.IBunSqlClientConn, ctx context.Context,
 	return err
 }
 
-func DropTable(client postgresqlclient.IBunSqlClientConn, ctx context.Context, table interface{}) error {
+func DropTable(client sqlclient.IBunSqlClientConn, ctx context.Context, table interface{}) error {
 	_, err := client.GetDB().NewDropTable().Model(table).IfExists().Exec(ctx)
 	return err
 }

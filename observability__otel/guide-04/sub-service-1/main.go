@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"thanhldt060802/appconfig"
+	"thanhldt060802/common/pubsub"
+	"thanhldt060802/common/tracer"
 	"thanhldt060802/internal/opentelemetry"
 	"thanhldt060802/internal/redisclient"
 	"thanhldt060802/middleware/auth"
@@ -22,17 +24,19 @@ func main() {
 	appconfig.InitConfig()
 
 	shutdown := opentelemetry.NewTracer(opentelemetry.TracerEndPointConfig{
-		Host: appconfig.AppConfig.JaegerOTLPHost,
-		Port: appconfig.AppConfig.JaegerOTLPPort,
+		ServiceName: appconfig.AppConfig.AppName,
+		Host:        appconfig.AppConfig.JaegerOTLPHost,
+		Port:        appconfig.AppConfig.JaegerOTLPPort,
 	})
 	defer shutdown()
 
-	redisclient.RedisClient = redisclient.NewRedisClient(redisclient.RedisConfig{
+	redisclient.RedisClientConnInstance = redisclient.NewRedisClient(redisclient.RedisConfig{
 		Host:     appconfig.AppConfig.RedisHost,
 		Port:     appconfig.AppConfig.RedisPort,
 		Database: appconfig.AppConfig.RedisDatabase,
 		Password: appconfig.AppConfig.RedisPassword,
 	})
+	pubsub.RedisPubInstance = pubsub.NewRedisPub[*tracer.MessageTracing](redisclient.RedisClientConnInstance.GetClient())
 
 	router := server.NewHTTPServer()
 

@@ -21,8 +21,9 @@ func main() {
 	appconfig.InitConfig()
 
 	shutdown := opentelemetry.NewTracer(opentelemetry.TracerEndPointConfig{
-		Host: appconfig.AppConfig.JaegerOTLPHost,
-		Port: appconfig.AppConfig.JaegerOTLPPort,
+		ServiceName: appconfig.AppConfig.AppName,
+		Host:        appconfig.AppConfig.JaegerOTLPHost,
+		Port:        appconfig.AppConfig.JaegerOTLPPort,
 	})
 	defer shutdown()
 

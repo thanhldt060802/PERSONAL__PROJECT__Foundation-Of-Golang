@@ -1,7 +1,6 @@
-package postgresqlclient
+package sqlclient
 
 import (
-	"crypto/tls"
 	"database/sql"
 	"fmt"
 
@@ -10,6 +9,8 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 )
+
+var BunSqlClientConnInstance IBunSqlClientConn
 
 type IBunSqlClientConn interface {
 	GetDB() *bun.DB
@@ -32,24 +33,22 @@ func NewBunSqlClient(config BunSqlConfig) IBunSqlClientConn {
 	client := &BunSqlClientConn{}
 	client.BunSqlConfig = config
 	if err := client.Connect(); err != nil {
-		log.Fatalf("ping to postgres failed: %v", err.Error())
+		log.Fatalf("Ping to postgres failed: %v", err.Error())
 	}
 	return client
 }
 
 func (c *BunSqlClientConn) Connect() error {
 	postgresConn := pgdriver.NewConnector(
-		pgdriver.WithNetwork("tcp"),
 		pgdriver.WithAddr(fmt.Sprintf("%v:%v", c.Host, c.Port)),
-		pgdriver.WithTLSConfig(&tls.Config{InsecureSkipVerify: true}),
+		pgdriver.WithDatabase(c.Database),
 		pgdriver.WithUser(c.Username),
 		pgdriver.WithPassword(c.Password),
-		pgdriver.WithDatabase(c.Database),
+		pgdriver.WithNetwork("tcp"),
 		pgdriver.WithInsecure(true),
 	)
-	postgresDB := sql.OpenDB(postgresConn)
 
-	db := bun.NewDB(postgresDB, pgdialect.New(), bun.WithDiscardUnknownColumns())
+	db := bun.NewDB(sql.OpenDB(postgresConn), pgdialect.New(), bun.WithDiscardUnknownColumns())
 	if err := db.Ping(); err != nil {
 		return err
 	}

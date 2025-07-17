@@ -1,29 +1,27 @@
-package redisclient
+package pubsub
 
 import (
 	"context"
 	"encoding/json"
+	"thanhldt060802/common/tracer"
 
 	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 )
 
-type RedisEnvelope struct {
-	TraceContext map[string]string `json:"trace_context"`
-	Payload      any               `json:"payload"`
-}
-
-type RedisPub[T any] struct {
-	redisClient *redis.Client
-}
+var RedisPubInstance IRedisPub[*tracer.MessageTracing]
 
 type IRedisPub[T any] interface {
 	Publish(ctx context.Context, channel string, data T) error
 }
 
-func NewRedisPub[T any](redisClient *redis.Client) IRedisPub[T] {
+type RedisPub[T any] struct {
+	client *redis.Client
+}
+
+func NewRedisPub[T any](client *redis.Client) IRedisPub[T] {
 	return &RedisPub[T]{
-		redisClient: redisClient,
+		client: client,
 	}
 }
 
@@ -33,7 +31,7 @@ func (redisPub *RedisPub[T]) Publish(ctx context.Context, channel string, data T
 		log.Errorf("Marshal data failed: %v", err.Error())
 		return err
 	}
-	if err := redisPub.redisClient.Publish(ctx, channel, payload).Err(); err != nil {
+	if err := redisPub.client.Publish(ctx, channel, payload).Err(); err != nil {
 		log.Errorf("Publish %v to %v failed: %v", data, channel, err.Error())
 		return err
 	}

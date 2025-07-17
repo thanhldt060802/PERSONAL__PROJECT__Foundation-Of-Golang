@@ -9,6 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var RedisClientConnInstance IRedisClientConn
+
 type IRedisClientConn interface {
 	GetClient() *redis.Client
 }
@@ -22,17 +24,16 @@ type RedisConfig struct {
 
 type RedisClientConn struct {
 	RedisConfig
-	Client *redis.Client
+	client *redis.Client
 }
-
-var RedisClient IRedisClientConn
 
 func NewRedisClient(config RedisConfig) IRedisClientConn {
 	client := &RedisClientConn{}
 	client.RedisConfig = config
 	if err := client.Connect(); err != nil {
-		log.Fatalf("connect to redis failed: %v", err.Error())
+		log.Fatalf("Connect to redis failed: %v", err.Error())
 	}
+
 	return client
 }
 
@@ -48,11 +49,11 @@ func (c *RedisClientConn) Connect() error {
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {
 		return err
 	}
-	c.Client = redisClient
+	c.client = redisClient
 
 	return nil
 }
 
 func (c *RedisClientConn) GetClient() *redis.Client {
-	return c.Client
+	return c.client
 }

@@ -1,35 +1,33 @@
-package redisclient
+package pubsub
 
 import (
 	"context"
 	"encoding/json"
 	"reflect"
+	"thanhldt060802/common/tracer"
 
 	"github.com/redis/go-redis/v9"
 	log "github.com/sirupsen/logrus"
 )
 
-type RedisEnvelope struct {
-	TraceContext map[string]string `json:"trace_context"`
-	Payload      any               `json:"payload"`
-}
-
-type RedisSub[T any] struct {
-	redisClient *redis.Client
-}
+var RedisSubInstance IRedisSub[*tracer.MessageTracing]
 
 type IRedisSub[T any] interface {
 	Subscribe(ctx context.Context, channel string, handler func(data T))
 }
 
-func NewRedisSub[T any](redisClient *redis.Client) IRedisSub[T] {
+type RedisSub[T any] struct {
+	client *redis.Client
+}
+
+func NewRedisSub[T any](client *redis.Client) IRedisSub[T] {
 	return &RedisSub[T]{
-		redisClient: redisClient,
+		client: client,
 	}
 }
 
 func (redisSub *RedisSub[T]) Subscribe(ctx context.Context, channel string, handler func(data T)) {
-	sub := redisSub.redisClient.Subscribe(ctx, channel)
+	sub := redisSub.client.Subscribe(ctx, channel)
 	ch := sub.Channel()
 	go func() {
 		for {

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"thanhldt060802/appconfig"
 	"thanhldt060802/internal/opentelemetry"
-	"thanhldt060802/internal/postgresqlclient"
+	"thanhldt060802/internal/sqlclient"
 	"thanhldt060802/middleware/auth"
 	"thanhldt060802/repository"
 	"thanhldt060802/repository/db"
@@ -24,10 +24,19 @@ func main() {
 	appconfig.InitConfig()
 
 	shutdown := opentelemetry.NewTracer(opentelemetry.TracerEndPointConfig{
-		Host: appconfig.AppConfig.JaegerOTLPHost,
-		Port: appconfig.AppConfig.JaegerOTLPPort,
+		ServiceName: appconfig.AppConfig.AppName,
+		Host:        appconfig.AppConfig.JaegerOTLPHost,
+		Port:        appconfig.AppConfig.JaegerOTLPPort,
 	})
 	defer shutdown()
+
+	sqlclient.BunSqlClientConnInstance = sqlclient.NewBunSqlClient(sqlclient.BunSqlConfig{
+		Host:     appconfig.AppConfig.PostgresHost,
+		Port:     appconfig.AppConfig.PostgresPort,
+		Database: appconfig.AppConfig.PostgresDatabase,
+		Username: appconfig.AppConfig.PostgresUsername,
+		Password: appconfig.AppConfig.PostgresPassword,
+	})
 
 	router := server.NewHTTPServer()
 
@@ -81,14 +90,6 @@ func main() {
 	api = api.AddBasePath(fmt.Sprintf("%v/%v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppVersion[:2]))
 
 	auth.AuthMdw = auth.NewSimpleAuthMiddleware()
-
-	repository.BunSqlClient = postgresqlclient.NewBunSqlClient(postgresqlclient.BunSqlConfig{
-		Host:     appconfig.AppConfig.PostgresHost,
-		Port:     appconfig.AppConfig.PostgresPort,
-		Database: appconfig.AppConfig.PostgresDatabase,
-		Username: appconfig.AppConfig.PostgresUsername,
-		Password: appconfig.AppConfig.PostgresPassword,
-	})
 
 	repository.PlayerRepo = db.NewPlayerRepo()
 

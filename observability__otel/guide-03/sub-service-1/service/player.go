@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 )
@@ -29,27 +28,23 @@ func NewPlayerService() IPlayerService {
 }
 
 func (s *PlayerService) GetById(ctx context.Context, playUuid string) (*model.Player, error) {
-	ctx, span := tracer.StartSpan(ctx, "service/player.go", "Service.GetById")
-	defer span.End()
+	url := fmt.Sprintf("http://localhost:8002/my-sub-service-2/v1/player/%v", playUuid)
+	ctx, span, req, err := tracer.StartSpanCrossService(ctx, "service/player.go", "Service.GetById", "GET", url)
+	if err != nil {
+		return nil, err
+	}
+	span.End()
 
 	// Part 1 - Start
 
 	time.Sleep(1 * time.Second)
 
-	client := http.Client{}
-	url := fmt.Sprintf("http://localhost:8002/my-sub-service-2/v1/player/%v", playUuid)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
 	authHeader, _ := ctx.Value("auth-header").(string)
 	req.Header.Set("Authorization", authHeader)
 
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 
+	client := http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
 		span.RecordError(err)
@@ -67,23 +62,18 @@ func (s *PlayerService) GetById(ctx context.Context, playUuid string) (*model.Pl
 	resWrapper := new(struct {
 		Data model.Player
 	})
-	err = json.NewDecoder(res.Body).Decode(resWrapper)
-	if err != nil {
+	if err := json.NewDecoder(res.Body).Decode(resWrapper); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-
 	player := &resWrapper.Data
-	span.SetAttributes(attribute.String("player.player_uuid", player.PlayerUuid))
 
 	// Part 1 - End
 
 	// Part 2 - Start
 
 	time.Sleep(1 * time.Second)
-
-	span.SetAttributes(attribute.String("other.action", "action.result"))
 
 	// Part 2 - End
 
