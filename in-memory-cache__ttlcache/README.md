@@ -1,6 +1,6 @@
 # GUIDES FOR TTLCACHE (MEMORY CACHE)
 
-## Guide 01 (See at guide-01)
+## Guide 1.1 (See at guide-1.1)
 
 ### Guide for memory cache using commonly used functions.
 
@@ -10,4 +10,4 @@
 - <code>func (c *Cache[K, V]) Get(key K, opts ...Option[K, V]) *Item[K, V]</code>: This function will get an element by key, it returns <code>*Item[K, V]</code> which contains key and value, and refresh the TTL of element.
 - <code>func (c *Cache[K, V]) Delete(key K)</code>: This function will delete an element by key.
 
-## Guide 02 (Coming soon...)
+## Guide xx (Coming soon...)

@@ -1,6 +1,6 @@
 # GUIDES FOR BADGER (QUEUE DISK)
 
-## Guide 01 (See at guide-01)
+## Guide 1.1 (See at guide-1.1)
 
 ### Guide for queue disk using commonly used functions.
 
@@ -11,8 +11,8 @@
 - <code>func (txn *badger.Txn) Delete(key []byte) error</code>: This function will delete an element by key.
 - <code>func (txn *badger.Txn) NewIterator(opt badger.IteratorOptions) *badger.Iterator</code>: This function will create a iterator for retrieving data in (queue) disk.
 
-## Guide 02 (See at guide-02)
+## Guide 1.2 (See at guide-1.2)
 
-### Guide for advanced queue disk. Base on Guide 01, we implement a batch queue disk to minimize disk reads/writes compared to queue disk of Guide 01.
+### Guide for advanced queue disk. Base on Guide 1.1, we implement a batch queue disk to minimize disk reads/writes compared to queue disk of Guide 1.1.
 
-## Guide 03 (Coming soon...)
+## Guide x (Coming soon...)
