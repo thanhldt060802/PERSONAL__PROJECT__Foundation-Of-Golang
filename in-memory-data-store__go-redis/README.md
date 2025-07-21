@@ -1,6 +1,6 @@
 # GUIDES FOR GO-REDIS (IN MEMORY DATA STORE)
 
-## Guide 1.1 (See at guide-1.1)
+## Guide 01 (See at guide-01)
 
 ### Guide for redis pub/sub using commonly used functions.
 

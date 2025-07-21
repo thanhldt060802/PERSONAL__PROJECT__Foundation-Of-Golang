@@ -1,8 +1,8 @@
 # GUIDES FOR TTLCACHE (IN MEMORY CACHE)
 
-## Guide 1.1 (See at guide-1.1)
+## Guide 01 (See at guide-01)
 
-### Guide for memory cache using commonly used functions.
+### Guide for in memory cache using commonly used functions.
 
 - <code>func New[K comparable, V any](opts ...Option[K, V]) *Cache[K, V]</code>: This function will initialize a <code>*Cache[K, V]</code> with options.
 - <code>func (c *Cache[K, V]) Start()</code>: This function will start an automatic cleanup process that periodically deletes expired items.
