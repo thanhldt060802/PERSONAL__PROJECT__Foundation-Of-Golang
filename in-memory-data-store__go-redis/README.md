@@ -1,4 +1,4 @@
-# GUIDES FOR GO-REDIS (REDIS)
+# GUIDES FOR GO-REDIS (IN MEMORY DATA STORE)
 
 ## Guide 1.1 (See at guide-1.1)
 
