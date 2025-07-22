@@ -6,6 +6,9 @@ import (
 	"thanhldt060802/model"
 	"thanhldt060802/repository"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type (
@@ -24,8 +27,7 @@ func (s *PlayerService) GetById(ctx context.Context, playUuid string) (*model.Pl
 	ctx, span := tracer.StartSpanInternal(ctx)
 	defer span.End()
 
-	// Part 1 - Start
-
+	span.AddEvent("Call to PlayerRepo.GetById")
 	time.Sleep(1 * time.Second)
 
 	player, err := repository.PlayerRepo.GetById(ctx, playUuid)
@@ -34,13 +36,11 @@ func (s *PlayerService) GetById(ctx context.Context, playUuid string) (*model.Pl
 		return nil, err
 	}
 
-	// Part 1 - End
-
-	// Part 2 - Start
-
+	span.AddEvent("Call to Other.ActionName", trace.WithAttributes(
+		attribute.String("param.a", "Data A"),
+		attribute.String("param.b", "Data B"),
+	))
 	time.Sleep(1 * time.Second)
-
-	// Part 2 - End
 
 	return player, nil
 }

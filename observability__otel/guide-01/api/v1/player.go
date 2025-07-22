@@ -6,6 +6,7 @@ import (
 	"thanhldt060802/common/tracer"
 	"thanhldt060802/model"
 	"thanhldt060802/service"
+	"time"
 
 	authMdw "thanhldt060802/middleware/auth"
 
@@ -53,6 +54,9 @@ func (handler *apiPlayer) GetById(ctx context.Context, req *struct {
 }) (res *GetPlayerByIdResponse, err error) {
 	ctx, span := tracer.StartSpanInternal(ctx)
 	defer span.End()
+
+	span.AddEvent("Call to playerService.GetById")
+	time.Sleep(1 * time.Second)
 
 	player, err := handler.playerService.GetById(ctx, req.PlayerUuid)
 	if err != nil {

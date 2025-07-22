@@ -10,7 +10,7 @@ import (
 	"thanhldt060802/repository"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type (
@@ -31,26 +31,23 @@ func (s *PlayerService) InitSubscriber() {
 		subCtx, span := tracer.StartSpanInternal(pubCtx)
 		defer span.End()
 
-		span.SetAttributes(attribute.String("redis.sub_channel", "test.trace.pubsub"))
 		payloadBytes, _ := json.Marshal(data.Payload)
-		span.SetAttributes(attribute.String("test.trace.pubsub.payload", string(payloadBytes)))
+		span.AddEvent("Subscribe on Redis", trace.WithAttributes(
+			attribute.String("redis.sub_channel", "test.trace.pubsub"),
+			attribute.String("test.trace.pubsub.payload", string(payloadBytes)),
+		))
 
 		playerUuid, ok := data.Payload.(string)
 		if !ok {
-			err := errors.New("invalid payload")
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
+			span.Err = errors.New("invalid payload")
 			return
 		}
 
 		player, err := repository.PlayerRepo.GetById(subCtx, playerUuid)
 		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, err.Error())
+			span.Err = err
 			return
 		}
 		fmt.Println(*player)
-
-		span.SetStatus(codes.Ok, "success")
 	})
 }

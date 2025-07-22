@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"thanhldt060802/common/pubsub"
 	"thanhldt060802/common/tracer"
-	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type (
@@ -26,43 +25,25 @@ func NewPlayerService() IPlayerService {
 }
 
 func (s *PlayerService) GetById(ctx context.Context, playUuid string) (string, error) {
-	_, span1 := tracer.StartSpanInternal(ctx)
-	defer span1.End()
-
-	// Part 1 - Start
-
-	time.Sleep(1 * time.Second)
-
-	pubCtx, span2 := tracer.StartSpanInternal(ctx)
+	ctx, span := tracer.StartSpanInternal(ctx)
+	defer span.End()
 
 	msgTrace := tracer.MessageTracing{
 		TraceContext: propagation.MapCarrier{},
 		Payload:      playUuid,
 	}
 
-	otel.GetTextMapPropagator().Inject(pubCtx, msgTrace.TraceContext)
+	otel.GetTextMapPropagator().Inject(ctx, msgTrace.TraceContext)
 
-	span2.SetAttributes(attribute.String("redis.pub_channel", "test.trace.pubsub"))
+	payloadBytes, _ := json.Marshal(msgTrace.Payload)
+	span.AddEvent("Publish to Redis", trace.WithAttributes(
+		attribute.String("redis.pub_channel", "test.trace.pubsub"),
+		attribute.String("test.trace.pubsub.payload", string(payloadBytes)),
+	))
 	if err := pubsub.RedisPubInstance.Publish(ctx, "test.trace.pubsub", &msgTrace); err != nil {
-		span2.RecordError(err)
-		span2.SetStatus(codes.Error, err.Error())
-		span2.End()
+		span.Err = err
 		return "", err
 	}
-	payloadBytes, _ := json.Marshal(msgTrace.Payload)
-	span2.SetAttributes(attribute.String("test.trace.pubsub.payload", string(payloadBytes)))
 
-	span2.SetStatus(codes.Ok, "success")
-	span2.End()
-
-	// Part 1 - End
-
-	// Part 2 - Start
-
-	time.Sleep(1 * time.Second)
-
-	// Part 2 - End
-
-	span1.SetStatus(codes.Ok, "success")
 	return "success", nil
 }

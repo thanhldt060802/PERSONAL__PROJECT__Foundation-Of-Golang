@@ -12,7 +12,6 @@ import (
 	"github.com/cardinalby/hureg"
 	"github.com/danielgtaylor/huma/v2"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -57,13 +56,11 @@ func (handler *apiPlayer) GetById(ctx context.Context, req *struct {
 
 	player, err := handler.playerService.GetById(ctx, req.PlayerUuid)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+		span.Err = err
 		return
 	}
 
 	res = &GetPlayerByIdResponse{}
 	res.Body.Data = player
-	span.SetStatus(codes.Ok, "success")
 	return
 }

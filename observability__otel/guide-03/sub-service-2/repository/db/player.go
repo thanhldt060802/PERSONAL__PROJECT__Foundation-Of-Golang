@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/uptrace/bun"
-	"go.opentelemetry.io/otel/codes"
 )
 
 type PlayerRepo struct {
@@ -68,21 +67,17 @@ func (repo *PlayerRepo) GetById(ctx context.Context, playUuid string) (*model.Pl
 	ctx, span := tracer.StartSpanInternal(ctx)
 	defer span.End()
 
-	time.Sleep(1 * time.Second)
-
 	player := new(model.Player)
 
 	query := sqlclient.SqlClientConnInstance.GetDB().NewSelect().Model(player).
 		Where("player_uuid = ?", playUuid)
 
-	span.AddEvent("Fetch player from DB")
+	span.AddEvent(query.String())
 	err := query.Scan(ctx)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+		span.Err = err
 		return nil, err
 	} else {
-		span.SetStatus(codes.Ok, "success")
 		return player, nil
 	}
 }
