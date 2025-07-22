@@ -1,5 +1,15 @@
 package pubsub
 
+/* Document for go-redis library usage
+
+- func (c *redis.Client) Subscribe(ctx context.Context, channels ...string) *redis.PubSub
+	This function will subscribe to channel.
+
+- func (c *redis.PubSub) Channel(opts ...redis.ChannelOption) <-chan *redis.Message
+	This function will start a listener to channel for receiving messages.
+
+*/
+
 import (
 	"context"
 	"encoding/json"

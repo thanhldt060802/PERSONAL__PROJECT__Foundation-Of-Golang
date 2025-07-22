@@ -2,6 +2,7 @@ package tracer
 
 import (
 	"context"
+	"net/http"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -35,4 +36,24 @@ func StartSpanInternal(ctx context.Context) (context.Context, *CustomSpan) {
 		Span: span,
 	}
 	return ctx, &customSpan
+}
+
+// CROSS-SERVICE USAGE
+
+func StartSpanCrossService(ctx context.Context, method string, url string) (context.Context, *CustomSpan, *http.Request, error) {
+	modulePath, actionName := callbackInfo()
+	ctx, span := otel.Tracer(modulePath).Start(ctx, actionName)
+
+	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		span.End()
+		return nil, nil, nil, err
+	}
+
+	customSpan := CustomSpan{
+		Span: span,
+	}
+	return ctx, &customSpan, req, nil
 }

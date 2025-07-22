@@ -1,5 +1,12 @@
 package pubsub
 
+/* Document for go-redis library usage
+
+- func (c redis.cmdable) Publish(ctx context.Context, channel string, message interface{}) *redis.IntCmd
+	This function will publish message to channel.
+
+*/
+
 import (
 	"context"
 	"encoding/json"

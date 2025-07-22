@@ -5,6 +5,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -35,4 +36,15 @@ func StartSpanInternal(ctx context.Context) (context.Context, *CustomSpan) {
 		Span: span,
 	}
 	return ctx, &customSpan
+}
+
+// PUB/SUB SYSTEM USAGE
+
+type MessageTracing struct {
+	TraceContext propagation.MapCarrier
+	Payload      any
+}
+
+func (msgTrace *MessageTracing) ExtractTraceContext() context.Context {
+	return otel.GetTextMapPropagator().Extract(context.Background(), propagation.MapCarrier(msgTrace.TraceContext))
 }

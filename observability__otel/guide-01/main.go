@@ -1,95 +1,99 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"math/rand"
-	"thanhldt060802/common/tracer"
+	"fmt"
+	"net/http"
+	"thanhldt060802/appconfig"
 	"thanhldt060802/internal/opentelemetry"
-	"time"
+	"thanhldt060802/internal/sqlclient"
+	"thanhldt060802/middleware/auth"
+	"thanhldt060802/repository"
+	"thanhldt060802/repository/db"
+	server "thanhldt060802/server/http"
+	"thanhldt060802/service"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/cardinalby/hureg"
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humagin"
+	"github.com/gin-gonic/gin"
+
+	apiV1 "thanhldt060802/api/v1"
 )
 
-var EXAMPLE_NUM int = 1
-var EXAMPLES map[int]func()
-
-func init() {
-	EXAMPLES = map[int]func(){
-		1: Example1,
-		2: Example2,
-		3: Example3,
-	}
-}
-
 func main() {
+	appconfig.InitConfig()
 
-	EXAMPLES[EXAMPLE_NUM]()
-
-}
-
-// Example for internal tracing.
-func Example1() {
 	opentelemetry.ShutdownTracer = opentelemetry.NewTracer(opentelemetry.TracerEndPointConfig{
-		ServiceName: "my-service",
-		Host:        "localhost",
-		Port:        4318,
+		ServiceName: appconfig.AppConfig.AppName,
+		Host:        appconfig.AppConfig.JaegerOTLPHost,
+		Port:        appconfig.AppConfig.JaegerOTLPPort,
 	})
 	defer opentelemetry.ShutdownTracer()
 
-	function3 := func(ctx context.Context) {
-		_, span := tracer.StartSpanInternal(ctx)
-		defer span.End()
+	sqlclient.SqlClientConnInstance = sqlclient.NewSqlClient(sqlclient.SqlConfig{
+		Host:     appconfig.AppConfig.PostgresHost,
+		Port:     appconfig.AppConfig.PostgresPort,
+		Database: appconfig.AppConfig.PostgresDatabase,
+		Username: appconfig.AppConfig.PostgresUsername,
+		Password: appconfig.AppConfig.PostgresPassword,
+	})
 
-		span.AddEvent("Fetch data", trace.WithAttributes(
-			attribute.String("data", "Some data"),
-		))
-		time.Sleep(1 * time.Second)
+	router := server.NewHTTPServer()
 
-		span.AddEvent("Fetch extensive data")
-		time.Sleep(1 * time.Second)
-	}
-	function2 := func(ctx context.Context) {
-		ctx, span := tracer.StartSpanInternal(ctx)
-		defer span.End()
-
-		span.AddEvent("Call to function3", trace.WithAttributes(
-			attribute.String("param.a", "Some data"),
-			attribute.String("param.b", "Some data"),
-		))
-		function3(ctx)
-		time.Sleep(1 * time.Second)
-
-		if rand.Intn(2) == 0 {
-			span.Err = errors.New("some thing wrong")
-		}
-	}
-	function1 := func(ctx context.Context) {
-		ctx, span := tracer.StartSpanInternal(ctx)
-		defer span.End()
-
-		span.AddEvent("Call to function2")
-		function2(ctx)
-		time.Sleep(1 * time.Second)
-
-		span.SetAttributes(
-			attribute.String("result", "Some data"),
-			attribute.String("message", "Some data"),
-		)
+	humaConfig := huma.Config{
+		OpenAPI: &huma.OpenAPI{
+			Components: &huma.Components{
+				SecuritySchemes: map[string]*huma.SecurityScheme{
+					"standard-auth": {
+						Type:         "http",
+						Scheme:       "bearer",
+						In:           "header",
+						Description:  "Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+						BearerFormat: "Token String",
+						Name:         "Authorization",
+					},
+				},
+			},
+			Servers: []*huma.Server{
+				{
+					URL:         fmt.Sprintf("http://%v:%v", appconfig.AppConfig.AppHost, appconfig.AppConfig.AppPort),
+					Description: "Local Environment",
+					Variables:   map[string]*huma.ServerVariable{},
+				},
+			},
+		},
+		OpenAPIPath:   fmt.Sprintf("/%v/openapi", appconfig.AppConfig.AppName),
+		DocsPath:      "",
+		Formats:       huma.DefaultFormats,
+		DefaultFormat: "application/json",
 	}
 
-	function1(context.Background())
+	router.GET(fmt.Sprintf("/%v/api-document", appconfig.AppConfig.AppName), func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`
+		<!doctype html>
+		<html>
+			<head>
+				<title>MyService APIs</title>
+				<meta charset="utf-8" />
+				<meta name="viewport" content="width=device-width, initial-scale=1" />
+			</head>
+			<body>
+				<script id="api-reference" data-url="/`+appconfig.AppConfig.AppName+`/openapi.json"></script>
+				<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+			</body>
+		</html>
+		`))
+	})
 
-	select {}
-}
+	humaAPI := humagin.New(router, humaConfig)
+	api := hureg.NewAPIGen(humaAPI)
+	api = api.AddBasePath(fmt.Sprintf("%v/%v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppVersion[:2]))
 
-// Example for cross-service tracing.
-func Example2() {
+	auth.AuthMdw = auth.NewSimpleAuthMiddleware()
 
-}
+	repository.PlayerRepo = db.NewPlayerRepo()
 
-// Example for pub/sub system tracing.
-func Example3() {
+	apiV1.RegisterAPIExample(api, service.NewPlayerService())
 
+	server.Start(router)
 }

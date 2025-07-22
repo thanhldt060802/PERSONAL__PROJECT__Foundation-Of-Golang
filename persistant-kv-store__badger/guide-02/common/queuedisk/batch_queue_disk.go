@@ -38,6 +38,7 @@ func NewBatchQueueDisk[T any](path string, batchSize int) IBatchQueueDisk[T] {
 	opts := badger.DefaultOptions(path)
 	// opts.WithSyncWrites(true)
 	opts.Logger = nil
+
 	db, err := badger.Open(opts)
 	if err != nil {
 		log.Fatal(err)

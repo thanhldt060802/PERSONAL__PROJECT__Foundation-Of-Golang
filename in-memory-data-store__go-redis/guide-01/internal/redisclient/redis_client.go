@@ -1,5 +1,12 @@
 package redisclient
 
+/* Document for go-redis library usage
+
+- func redis.NewClient(opt *redis.Options) *redis.Client
+	This function will initialize a *redis.Client with options (it is Redis client to Redis server).
+
+*/
+
 import (
 	"context"
 	"fmt"
