@@ -29,11 +29,11 @@ type SqlClientConn struct {
 	DB *bun.DB
 }
 
-func NewSqlClient(config SqlConfig) ISqlClientConn {
+func NewSqlClient(config SqlConfig) *SqlClientConn {
 	client := &SqlClientConn{}
 	client.SqlConfig = config
 	if err := client.Connect(); err != nil {
-		log.Fatalf("Ping to postgres failed: %v", err.Error())
+		log.Fatalf("Connect to postgres failed: %v", err.Error())
 	}
 	return client
 }

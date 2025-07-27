@@ -8,12 +8,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func NewHTTPServer() *gin.Engine {
 	engine := gin.New()
-	engine.Use(otelgin.Middleware(appconfig.AppConfig.AppName))
 	engine.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"service-name": appconfig.AppConfig.AppName,

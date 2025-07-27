@@ -19,14 +19,6 @@ type Config struct {
 	PostgresDatabase string
 	PostgresUsername string
 	PostgresPassword string
-
-	JaegerOTLPHost string
-	JaegerOTLPPort int
-
-	RedisHost     string
-	RedisPort     int
-	RedisDatabase int
-	RedisPassword string
 }
 
 var AppConfig *Config
@@ -47,14 +39,6 @@ func InitConfig() {
 		PostgresDatabase: GetString("POSTGRES_DATABASE", "my_db"),
 		PostgresUsername: GetString("POSTGRES_USERNAME", "postgres"),
 		PostgresPassword: GetString("POSTGRES_PASSWORD", ""),
-
-		JaegerOTLPHost: GetString("JAEGER_OTLP_HOST", "localhost"),
-		JaegerOTLPPort: GetInt("JAEGER_OTLP_PORT", 4318),
-
-		RedisHost:     GetString("REDIS_HOST", "localhost"),
-		RedisPort:     GetInt("REDIS_PORT", 6379),
-		RedisDatabase: GetInt("REDIS_DATABASE", 0),
-		RedisPassword: GetString("REDIS_PASSWORD", ""),
 	}
 
 	log.Info("Load .env file successful")

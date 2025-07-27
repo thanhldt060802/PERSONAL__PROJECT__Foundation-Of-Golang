@@ -22,7 +22,7 @@ var AppConfig *Config
 
 func InitConfig() {
 	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal("Load file .env failed: ", err)
+		log.Fatalf("Load file .env failed: %v", err.Error())
 	}
 
 	AppConfig = &Config{
@@ -50,7 +50,7 @@ func GetInt(key string, defaultValue int) int {
 	if value, exists := os.LookupEnv(key); exists {
 		convertedValue, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			log.Fatal("Get int from file .env failed: ", err)
+			log.Fatalf("Get int from file .env failed: %v", err.Error())
 		}
 		return int(convertedValue)
 	} else {

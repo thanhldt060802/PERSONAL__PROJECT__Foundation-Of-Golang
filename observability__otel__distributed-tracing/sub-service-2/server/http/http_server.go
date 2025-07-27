@@ -29,10 +29,10 @@ func Start(server *gin.Engine) {
 	exit := make(chan struct{})
 	go func() {
 		if err := server.Run(fmt.Sprintf(":%v", appconfig.AppConfig.AppPort)); err != nil {
-			log.Errorf("failed to start service %v: %v", appconfig.AppConfig.AppName, err.Error())
+			log.Errorf("Failed to start service %v: %v", appconfig.AppConfig.AppName, err.Error())
 			close(exit)
 		}
 	}()
-	log.Infof("service %v listening on port %v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppPort)
+	log.Infof("Service %v listening on port %v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppPort)
 	<-exit
 }
