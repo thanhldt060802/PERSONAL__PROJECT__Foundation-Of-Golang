@@ -3,19 +3,23 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"thanhldt060802/appconfig"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
+var APP_NAME string
+var APP_VERSION string
+var APP_HOST string
+var APP_PORT string
+
 func NewHTTPServer() *gin.Engine {
 	engine := gin.New()
 	engine.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"service-name": appconfig.AppConfig.AppName,
-			"version":      appconfig.AppConfig.AppVersion,
+			"service-name": APP_NAME,
+			"version":      APP_VERSION,
 			"time":         time.Now().Unix(),
 		})
 	})
@@ -26,11 +30,11 @@ func NewHTTPServer() *gin.Engine {
 func Start(server *gin.Engine) {
 	exit := make(chan struct{})
 	go func() {
-		if err := server.Run(fmt.Sprintf(":%v", appconfig.AppConfig.AppPort)); err != nil {
-			log.Errorf("Failed to start service %v: %v", appconfig.AppConfig.AppName, err.Error())
+		if err := server.Run(fmt.Sprintf(":%v", APP_PORT)); err != nil {
+			log.Errorf("Failed to start service %v: %v", APP_NAME, err.Error())
 			close(exit)
 		}
 	}()
-	log.Infof("Service %v listening on port %v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppPort)
+	log.Infof("Service %v listening on port %v", APP_NAME, APP_PORT)
 	<-exit
 }

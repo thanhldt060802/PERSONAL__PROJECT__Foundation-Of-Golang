@@ -1,0 +1,16 @@
+{
+    "app": {
+        "name": "my-service",
+        "version": "v1.0.1",
+        "host": "localhost",
+        "port": 5432
+    },
+    "db": {
+        "driver": "postgresql",
+        "host": "localhost",
+        "port": 5432,
+        "database": "my_db",
+        "username": "postgres",
+        "password": "12345678"
+    }
+}

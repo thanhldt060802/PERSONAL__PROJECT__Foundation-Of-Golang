@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"thanhldt060802/appconfig"
 	"thanhldt060802/internal/sqlclient"
 	"thanhldt060802/middleware/auth"
 	"thanhldt060802/repository"
@@ -16,19 +15,30 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
 	"github.com/gin-gonic/gin"
 
+	"github.com/spf13/viper"
+
 	apiV1 "thanhldt060802/api/v1"
 )
 
 func init() {
-	appconfig.InitConfig()
+	viper.SetConfigName("config")
+	viper.SetConfigType("json")
+	viper.AddConfigPath("./config")
 
-	sqlclient.SqlClientConnInstance = sqlclient.NewSqlClient(sqlclient.SqlConfig{
-		Host:     appconfig.AppConfig.PostgresHost,
-		Port:     appconfig.AppConfig.PostgresPort,
-		Database: appconfig.AppConfig.PostgresDatabase,
-		Username: appconfig.AppConfig.PostgresUsername,
-		Password: appconfig.AppConfig.PostgresPassword,
-	})
+	switch viper.GetString("db.driver") {
+	case "postgres":
+		{
+			sqlclient.SqlClientConnInstance = sqlclient.NewSqlClient(sqlclient.SqlConfig{
+				Host:     viper.GetString("db.host"),
+				Port:     viper.GetInt("db.port"),
+				Database: viper.GetString("db.database"),
+				Username: viper.GetString("db.username"),
+				Password: viper.GetString("db.password"),
+			})
+		}
+	}
+
+	server.APP_NAME = viper.get
 
 	initRepository()
 }
