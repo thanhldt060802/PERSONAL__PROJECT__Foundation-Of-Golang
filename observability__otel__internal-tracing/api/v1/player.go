@@ -12,18 +12,14 @@ import (
 
 	"github.com/cardinalby/hureg"
 	"github.com/danielgtaylor/huma/v2"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type apiPlayer struct {
-	tracer        trace.Tracer
 	playerService service.IPlayerService
 }
 
 func RegisterAPIExample(api hureg.APIGen, playerService service.IPlayerService) {
 	handler := &apiPlayer{
-		tracer:        otel.Tracer("api/v1/player.go"),
 		playerService: playerService,
 	}
 

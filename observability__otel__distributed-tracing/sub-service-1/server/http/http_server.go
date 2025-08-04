@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"thanhldt060802/appconfig"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,13 +10,20 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
+var (
+	APP_NAME    string
+	APP_VERSION string
+	APP_HOST    string
+	APP_PORT    int
+)
+
 func NewHTTPServer() *gin.Engine {
 	engine := gin.New()
-	engine.Use(otelgin.Middleware(appconfig.AppConfig.AppName))
+	engine.Use(otelgin.Middleware(APP_NAME))
 	engine.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"service-name": appconfig.AppConfig.AppName,
-			"version":      appconfig.AppConfig.AppVersion,
+			"service-name": APP_NAME,
+			"version":      APP_VERSION,
 			"time":         time.Now().Unix(),
 		})
 	})
@@ -28,11 +34,11 @@ func NewHTTPServer() *gin.Engine {
 func Start(server *gin.Engine) {
 	exit := make(chan struct{})
 	go func() {
-		if err := server.Run(fmt.Sprintf(":%v", appconfig.AppConfig.AppPort)); err != nil {
-			log.Errorf("Failed to start service %v: %v", appconfig.AppConfig.AppName, err.Error())
+		if err := server.Run(fmt.Sprintf(":%v", APP_PORT)); err != nil {
+			log.Errorf("Start service %v failed: %v", APP_NAME, err.Error())
 			close(exit)
 		}
 	}()
-	log.Infof("Service %v listening on port %v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppPort)
+	log.Infof("Service %v listening on port %v", APP_NAME, APP_PORT)
 	<-exit
 }

@@ -12,7 +12,7 @@ import (
 var APP_NAME string
 var APP_VERSION string
 var APP_HOST string
-var APP_PORT string
+var APP_PORT int
 
 func NewHTTPServer() *gin.Engine {
 	engine := gin.New()
@@ -31,7 +31,7 @@ func Start(server *gin.Engine) {
 	exit := make(chan struct{})
 	go func() {
 		if err := server.Run(fmt.Sprintf(":%v", APP_PORT)); err != nil {
-			log.Errorf("Failed to start service %v: %v", APP_NAME, err.Error())
+			log.Errorf("Start service %v failed: %v", APP_NAME, err.Error())
 			close(exit)
 		}
 	}()

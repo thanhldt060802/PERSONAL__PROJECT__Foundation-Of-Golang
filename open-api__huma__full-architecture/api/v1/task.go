@@ -26,7 +26,7 @@ func RegisterAPITask(api hureg.APIGen, taskService service.ITaskService) {
 		taskService: taskService,
 	}
 
-	apiGroup := api.AddBasePath("/autocall/v4/task")
+	apiGroup := api.AddBasePath("/task")
 
 	hureg.Register(
 		apiGroup,

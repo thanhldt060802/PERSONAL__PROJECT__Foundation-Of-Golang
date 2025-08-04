@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
-	"thanhldt060802/appconfig"
 	"thanhldt060802/internal/opentelemetry"
 	"thanhldt060802/middleware/auth"
 	server "thanhldt060802/server/http"
@@ -13,18 +13,32 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 
 	apiV1 "thanhldt060802/api/v1"
 )
 
-func main() {
-	appconfig.InitConfig()
+func init() {
+	viper.SetConfigName("config")
+	viper.SetConfigType("json")
+	viper.AddConfigPath("./config")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Read from config file failed: %v", err)
+	}
+
+	server.APP_NAME = viper.GetString("app.name")
+	server.APP_VERSION = viper.GetString("app.version")
+	server.APP_HOST = viper.GetString("app.host")
+	server.APP_PORT = viper.GetInt("app.port")
 
 	opentelemetry.ShutdownTracer = opentelemetry.NewTracer(opentelemetry.TracerEndPointConfig{
-		ServiceName: appconfig.AppConfig.AppName,
-		Host:        appconfig.AppConfig.JaegerOTLPHost,
-		Port:        appconfig.AppConfig.JaegerOTLPPort,
+		ServiceName: server.APP_NAME,
+		Host:        viper.GetString("jaeger.otlp_host"),
+		Port:        viper.GetInt("jaeger.otlp_port"),
 	})
+}
+
+func main() {
 	defer opentelemetry.ShutdownTracer()
 
 	router := server.NewHTTPServer()
@@ -45,19 +59,19 @@ func main() {
 			},
 			Servers: []*huma.Server{
 				{
-					URL:         fmt.Sprintf("http://%v:%v", appconfig.AppConfig.AppHost, appconfig.AppConfig.AppPort),
+					URL:         fmt.Sprintf("http://%v:%v", server.APP_HOST, server.APP_PORT),
 					Description: "Local Environment",
 					Variables:   map[string]*huma.ServerVariable{},
 				},
 			},
 		},
-		OpenAPIPath:   fmt.Sprintf("/%v/openapi", appconfig.AppConfig.AppName),
+		OpenAPIPath:   fmt.Sprintf("/%v/openapi", server.APP_NAME),
 		DocsPath:      "",
 		Formats:       huma.DefaultFormats,
 		DefaultFormat: "application/json",
 	}
 
-	router.GET(fmt.Sprintf("/%v/api-document", appconfig.AppConfig.AppName), func(c *gin.Context) {
+	router.GET(fmt.Sprintf("/%v/api-document", server.APP_NAME), func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`
 		<!doctype html>
 		<html>
@@ -67,7 +81,7 @@ func main() {
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 			</head>
 			<body>
-				<script id="api-reference" data-url="/`+appconfig.AppConfig.AppName+`/openapi.json"></script>
+				<script id="api-reference" data-url="/`+server.APP_NAME+`/openapi.json"></script>
 				<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
 			</body>
 		</html>
@@ -76,7 +90,7 @@ func main() {
 
 	humaAPI := humagin.New(router, humaConfig)
 	api := hureg.NewAPIGen(humaAPI)
-	api = api.AddBasePath(fmt.Sprintf("%v/%v", appconfig.AppConfig.AppName, appconfig.AppConfig.AppVersion[:2]))
+	api = api.AddBasePath(fmt.Sprintf("%v/%v", server.APP_NAME, server.APP_VERSION[:2]))
 
 	auth.AuthMdw = auth.NewSimpleAuthMiddleware()
 
