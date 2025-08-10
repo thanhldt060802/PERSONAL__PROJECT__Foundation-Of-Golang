@@ -46,3 +46,7 @@
 ### Guide for Distributed System
 
 - ergo
+
+### Guide for Payment Gateway
+
+- stripe-go
