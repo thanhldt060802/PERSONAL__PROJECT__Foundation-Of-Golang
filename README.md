@@ -6,7 +6,7 @@
 
 - ttlcache
 
-### Guide for Persistant KV Store
+### Guide for Persistant Key Value Store
 
 - badger
 
