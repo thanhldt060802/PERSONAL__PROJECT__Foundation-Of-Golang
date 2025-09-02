@@ -1,0 +1,14 @@
+{
+    "app": {
+        "name": "my-service",
+        "version": "v1.0.1",
+        "host": "localhost",
+        "port": 8001
+    },
+    "rabbitmq": {
+        "host": "localhost",
+        "port": 5672,
+        "username": "rabbitmq",
+        "password": "12345678"
+    }
+}
