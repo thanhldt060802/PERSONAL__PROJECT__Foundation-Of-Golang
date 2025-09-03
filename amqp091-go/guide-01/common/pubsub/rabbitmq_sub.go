@@ -1,1 +1,134 @@
 package pubsub
+
+import (
+	"context"
+	"encoding/json"
+	"reflect"
+	"thanhldt060802/internal/rabbitmqclient"
+	"thanhldt060802/model"
+	"time"
+
+	"github.com/rabbitmq/amqp091-go"
+	log "github.com/sirupsen/logrus"
+)
+
+var RabbitMQSubInstance1 IRabbitMQSub[string]
+var RabbitMQSubInstance2 IRabbitMQSub[*model.DataStruct]
+
+type IRabbitMQSub[T any] interface {
+	ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error)
+}
+
+type RabbitMQSub[T any] struct {
+	channel *amqp091.Channel
+}
+
+func NewRabbitMQSub[T any]() (IRabbitMQSub[T], error) {
+	if channel, err := rabbitmqclient.RabbitMQClientConnInstance.NewChannel(); err != nil {
+		log.Errorf("Create new channel failed: %v", err.Error())
+		return nil, err
+	} else {
+		return &RabbitMQSub[T]{
+			channel: channel,
+		}, nil
+	}
+}
+
+func (rabbitMqSub *RabbitMQSub[T]) ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error) {
+	go func() {
+		for {
+			for {
+				if err := rabbitMqSub.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler); err != nil {
+					log.Errorf("Start comsume on %v for %v of %v failed: %v. Retry in 5s...", queue, routingKey, exchange, err.Error())
+					time.Sleep(5 * time.Second)
+					continue
+				}
+
+				log.Infof("Start comsume on %v for %v of %v successful", queue, routingKey, exchange)
+				break
+			}
+
+			closeChan := rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
+			err := <-closeChan
+			log.Errorf("Channel of consumer on %v for %v of %v closed: %v. Retry in 5s...", queue, routingKey, exchange, err.Error())
+			time.Sleep(5 * time.Second)
+
+			for {
+				newCh, err := rabbitmqclient.RabbitMQClientConnInstance.NewChannel()
+				if err != nil {
+					log.Errorf("Create new channel failed: %v. Retry in 5s...", err.Error())
+					time.Sleep(5 * time.Second)
+					continue
+				}
+				rabbitMqSub.channel = newCh
+				break
+			}
+		}
+	}()
+}
+
+func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error) error {
+	if err := rabbitMqSub.channel.Qos(prefetchCount, 0, false); err != nil {
+		log.Errorf("Set QoS for channel failed: %v", err.Error())
+		return err
+	}
+
+	if _, err := rabbitMqSub.channel.QueueDeclare(queue, true, false, false, false, nil); err != nil {
+		log.Errorf("Declare queue %v for %v of %v failed: %v", queue, routingKey, exchange, err.Error())
+		return err
+	}
+
+	if err := rabbitMqSub.channel.QueueBind(queue, routingKey, exchange, false, nil); err != nil {
+		log.Errorf("Bind queue %v for %v of %v failed: %v", queue, routingKey, exchange, err.Error())
+		return err
+	}
+
+	ch, err := rabbitMqSub.channel.Consume(queue, "", false, false, false, false, nil)
+	if err != nil {
+		log.Errorf("Start consume on %v for %v of %v failed: %v", queue, routingKey, exchange, err.Error())
+		return err
+	}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				rabbitMqSub.channel.Close()
+				return
+			case message := <-ch:
+				var value T
+				t := reflect.TypeOf(value)
+
+				var instance any
+				if t.Kind() == reflect.Ptr {
+					// T is pointer to struct: create *Struct
+					instance = reflect.New(t.Elem()).Interface()
+				} else {
+					// T is value: create pointer to value (e.g., *int, *string)
+					instance = reflect.New(t).Interface()
+				}
+
+				if err := json.Unmarshal([]byte(message.Body), instance); err != nil {
+					log.Errorf("Unmarshal %v failed: %v", message.Body, err.Error())
+					continue
+				}
+
+				var data T
+				if t.Kind() == reflect.Ptr {
+					// T is pointer already
+					data = instance.(T)
+				} else {
+					// T is value, dereference pointer
+					data = reflect.ValueOf(instance).Elem().Interface().(T)
+				}
+
+				if err := handler(data); err != nil {
+					log.Errorf("Handle message failed: %v", err.Error())
+				} else {
+					message.Ack(false)
+				}
+			}
+		}
+	}()
+
+	return nil
+}

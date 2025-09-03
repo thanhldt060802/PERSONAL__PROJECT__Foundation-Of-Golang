@@ -101,7 +101,7 @@ func Example2() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 			data := model.DataStruct{
-				Field1: uuid.New().String(),
+				Field1: fmt.Sprintf("my-payload-%v", i),
 				Field2: rand.Int32(),
 				Field3: rand.Int64(),
 				Field4: rand.Float32(),

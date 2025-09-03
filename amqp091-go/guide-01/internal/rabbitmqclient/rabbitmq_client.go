@@ -2,14 +2,17 @@ package rabbitmqclient
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rabbitmq/amqp091-go"
 	log "github.com/sirupsen/logrus"
 )
 
+var RabbitMQClientConnInstance IRabbitMQClientConn
+
 type IRabbitMQClientConn interface {
 	GetConnection() *amqp091.Connection
-	GetChannel() *amqp091.Channel
+	NewChannel() (*amqp091.Channel, error)
 	DeclareExchange(exchange string, kind string) error
 }
 
@@ -23,7 +26,6 @@ type RabbitMQConfig struct {
 type RabbitMQClientConn struct {
 	RabbitMQConfig
 	connection *amqp091.Connection
-	channel    *amqp091.Channel
 }
 
 func NewRabbitMQClient(config RabbitMQConfig) IRabbitMQClientConn {
@@ -43,12 +45,7 @@ func (c *RabbitMQClientConn) Connect() error {
 	}
 	c.connection = conn
 
-	ch, err := conn.Channel()
-	if err != nil {
-		return err
-	}
-	c.channel = ch
-
+	log.Infof("Connect to RabbitMQ successful")
 	return nil
 }
 
@@ -56,10 +53,35 @@ func (c *RabbitMQClientConn) GetConnection() *amqp091.Connection {
 	return c.connection
 }
 
-func (c *RabbitMQClientConn) GetChannel() *amqp091.Channel {
-	return c.channel
+func (c *RabbitMQClientConn) NewChannel() (*amqp091.Channel, error) {
+	return c.connection.Channel()
 }
 
 func (c *RabbitMQClientConn) DeclareExchange(exchange string, kind string) error {
-	return c.channel.ExchangeDeclare(exchange, kind, true, false, false, false, nil)
+	channel, err := c.connection.Channel()
+	if err != nil {
+		return err
+	}
+	defer channel.Close()
+
+	return channel.ExchangeDeclare(exchange, kind, true, false, false, false, nil)
+}
+
+func (c *RabbitMQClientConn) ConnectionWatcher() {
+	closeChan := c.connection.NotifyClose(make(chan *amqp091.Error))
+	go func() {
+		for err := range closeChan {
+			log.Errorf("RabbitMQ connection closed: %v. Reconnecting...", err.Error())
+			for {
+				if err := c.Connect(); err != nil {
+					log.Warnf("Reconnect to rabbitmq failed: %v. Retry in 5s...", err.Error())
+					time.Sleep(5 * time.Second)
+					continue
+				}
+
+				log.Infof("Reconnect to RabbitMQ successful")
+				break
+			}
+		}
+	}()
 }
