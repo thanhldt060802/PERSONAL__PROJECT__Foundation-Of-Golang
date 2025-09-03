@@ -1,6 +1,7 @@
 package rabbitmqclient
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -35,6 +36,8 @@ func NewRabbitMQClient(config RabbitMQConfig) IRabbitMQClientConn {
 		log.Fatalf("Connect to rabbitmq failed: %v", err.Error())
 	}
 
+	client.connectionWatcher(context.Background())
+
 	return client
 }
 
@@ -67,20 +70,34 @@ func (c *RabbitMQClientConn) DeclareExchange(exchange string, kind string) error
 	return channel.ExchangeDeclare(exchange, kind, true, false, false, false, nil)
 }
 
-func (c *RabbitMQClientConn) ConnectionWatcher() {
-	closeChan := c.connection.NotifyClose(make(chan *amqp091.Error))
+func (c *RabbitMQClientConn) connectionWatcher(ctx context.Context) {
 	go func() {
-		for err := range closeChan {
-			log.Errorf("RabbitMQ connection closed: %v. Reconnecting...", err.Error())
-			for {
-				if err := c.Connect(); err != nil {
-					log.Warnf("Reconnect to rabbitmq failed: %v. Retry in 5s...", err.Error())
-					time.Sleep(5 * time.Second)
-					continue
-				}
+		for {
+			closeChan := c.connection.NotifyClose(make(chan *amqp091.Error))
 
-				log.Infof("Reconnect to RabbitMQ successful")
-				break
+			select {
+			case <-ctx.Done():
+				c.connection.Close()
+				log.Infof("Context canceled, stop watcher")
+				return
+			case rabbitErr := <-closeChan:
+				if rabbitErr != nil {
+					log.Errorf("RabbitMQ connection closed: %v. Retry in 5s...", rabbitErr.Error())
+				} else {
+					log.Warnf("RabbitMQ connection closed cleanly. Retry in 5s...")
+				}
+				time.Sleep(5 * time.Second)
+
+				for {
+					if err := c.Connect(); err != nil {
+						log.Warnf("Reconnect to rabbitmq failed: %v. Retry in 5s...", err.Error())
+						time.Sleep(5 * time.Second)
+						continue
+					}
+
+					log.Infof("Reconnect to RabbitMQ successful")
+					break
+				}
 			}
 		}
 	}()

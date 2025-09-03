@@ -53,7 +53,7 @@ func Example1() {
 	go func() {
 		count := 0
 
-		if err := pubsub.RabbitMQSubInstance1.Consume(context.Background(), "user", "user-handler-queue", "service.admin.*.create", func(data string) error {
+		pubsub.RabbitMQSubInstance1.ConsumeWithRetry(context.Background(), "user", "my-service-handle-for-user", "service.admin.*.create", 1, func(data string) error {
 			fmt.Println(data)
 
 			count++
@@ -62,9 +62,7 @@ func Example1() {
 			time.Sleep(1 * time.Second)
 
 			return nil
-		}); err != nil {
-			log.Fatalf("Failed to start consume on %v for %v of %v: %v", "user-handler-queue", "service.admin.*.create", "user", err.Error())
-		}
+		})
 	}()
 
 	go func() {
@@ -72,10 +70,7 @@ func Example1() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 			data := fmt.Sprintf("my-payload-%v", i)
-			if err := pubsub.RabbitMQPubInstance1.Publish(ctx, "user", fmt.Sprintf("service.admin.user-%v.create", i), data); err != nil {
-				cancel()
-				return
-			}
+			pubsub.RabbitMQPubInstance1.PublishWithRetry(ctx, "user", fmt.Sprintf("service.admin.user-%v.create", i), data)
 
 			cancel()
 			time.Sleep(200 * time.Millisecond)
@@ -109,7 +104,7 @@ func Example2() {
 	go func() {
 		count := 0
 
-		if err := pubsub.RabbitMQSubInstance2.Consume(context.Background(), "user", "user-handler-queue", "service.admin.*.create", func(data *model.DataStruct) error {
+		pubsub.RabbitMQSubInstance2.ConsumeWithRetry(context.Background(), "user", "my-service-handle-for-user", "service.admin.*.create", 1, func(data *model.DataStruct) error {
 			fmt.Println(*data)
 
 			count++
@@ -118,9 +113,7 @@ func Example2() {
 			time.Sleep(1 * time.Second)
 
 			return nil
-		}); err != nil {
-			log.Fatalf("Failed to start consume on %v for %v of %v: %v", "user-handler-queue", "service.admin.*.create", "user", err.Error())
-		}
+		})
 	}()
 
 	go func() {
@@ -140,10 +133,7 @@ func Example2() {
 					Field3: rand.Int64(),
 				},
 			}
-			if err := pubsub.RabbitMQPubInstance2.Publish(ctx, "user", fmt.Sprintf("service.admin.user-%v.create", i), &data); err != nil {
-				cancel()
-				return
-			}
+			pubsub.RabbitMQPubInstance2.PublishWithRetry(ctx, "user", fmt.Sprintf("service.admin.user-%v.create", i), &data)
 
 			cancel()
 			time.Sleep(200 * time.Millisecond)

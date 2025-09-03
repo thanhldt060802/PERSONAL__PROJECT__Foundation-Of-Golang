@@ -36,32 +36,56 @@ func NewRabbitMQSub[T any]() (IRabbitMQSub[T], error) {
 
 func (rabbitMqSub *RabbitMQSub[T]) ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error) {
 	go func() {
+		closeChan := rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
+
 		for {
-			for {
-				if err := rabbitMqSub.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler); err != nil {
-					log.Errorf("Start comsume on %v for %v of %v failed: %v. Retry in 5s...", queue, routingKey, exchange, err.Error())
-					time.Sleep(5 * time.Second)
-					continue
+			err := rabbitMqSub.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler)
+			if err != nil {
+				log.Errorf("Start comsumer on %v for %v of %v failed: %v, Retry in 5s...", queue, routingKey, exchange, err.Error())
+				time.Sleep(5 * time.Second)
+
+				for {
+					newCh, chErr := rabbitmqclient.RabbitMQClientConnInstance.NewChannel()
+					if chErr != nil {
+						log.Errorf("Create new channel failed: %v. Retry in 5s...", chErr.Error())
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					rabbitMqSub.channel = newCh
+
+					break
 				}
 
-				log.Infof("Start comsume on %v for %v of %v successful", queue, routingKey, exchange)
-				break
+				continue
 			}
 
-			closeChan := rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
-			err := <-closeChan
-			log.Errorf("Channel of consumer on %v for %v of %v closed: %v. Retry in 5s...", queue, routingKey, exchange, err.Error())
-			time.Sleep(5 * time.Second)
+			log.Infof("Start comsumer on %v for %v of %v successful", queue, routingKey, exchange)
 
-			for {
-				newCh, err := rabbitmqclient.RabbitMQClientConnInstance.NewChannel()
-				if err != nil {
-					log.Errorf("Create new channel failed: %v. Retry in 5s...", err.Error())
-					time.Sleep(5 * time.Second)
-					continue
+			select {
+			case <-ctx.Done():
+				rabbitMqSub.channel.Close()
+				log.Infof("Context canceled, stop consumer on %v for %v of %v", queue, routingKey, exchange)
+				return
+			case rabbitErr := <-closeChan:
+				if rabbitErr != nil {
+					log.Errorf("Channel of consumer on %v for %v of %v closed: %v. Retry in 5s...", queue, routingKey, exchange, rabbitErr.Error())
+				} else {
+					log.Warnf("Channel of consumer on %v for %v of %v closed cleanly. Retry in 5s...", queue, routingKey, exchange)
 				}
-				rabbitMqSub.channel = newCh
-				break
+				time.Sleep(5 * time.Second)
+
+				for {
+					newCh, chErr := rabbitmqclient.RabbitMQClientConnInstance.NewChannel()
+					if chErr != nil {
+						log.Errorf("Create new channel failed: %v. Retry in 5s...", chErr.Error())
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					rabbitMqSub.channel = newCh
+
+					closeChan = rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
+					break
+				}
 			}
 		}
 	}()
@@ -85,16 +109,20 @@ func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange st
 
 	ch, err := rabbitMqSub.channel.Consume(queue, "", false, false, false, false, nil)
 	if err != nil {
-		log.Errorf("Start consume on %v for %v of %v failed: %v", queue, routingKey, exchange, err.Error())
+		log.Errorf("Start consumer on %v for %v of %v failed: %v", queue, routingKey, exchange, err.Error())
 		return err
 	}
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				rabbitMqSub.channel.Close()
 				return
-			case message := <-ch:
+			case message, ok := <-ch:
+				if !ok {
+					log.Errorf("Channel of consumer on %v for %v of %v closed", queue, routingKey, exchange)
+					return
+				}
+
 				var value T
 				t := reflect.TypeOf(value)
 
@@ -109,6 +137,7 @@ func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange st
 
 				if err := json.Unmarshal([]byte(message.Body), instance); err != nil {
 					log.Errorf("Unmarshal %v failed: %v", message.Body, err.Error())
+					message.Nack(false, true)
 					continue
 				}
 
@@ -123,6 +152,7 @@ func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange st
 
 				if err := handler(data); err != nil {
 					log.Errorf("Handle message failed: %v", err.Error())
+					message.Nack(false, true) // Xử lý bị lỗi sẽ requeue
 				} else {
 					message.Ack(false)
 				}
