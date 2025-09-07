@@ -154,7 +154,7 @@ func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange st
 					log.Errorf("Handle message failed: %v", err.Error())
 					message.Nack(false, true) // Xử lý bị lỗi sẽ requeue
 				} else {
-					log.Infof("Handle message success")
+					log.Infof("Handle message successful")
 					message.Ack(false)
 				}
 			}
