@@ -12,34 +12,34 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var RabbitMQSubInstance1 IRabbitMQSub[string]
-var RabbitMQSubInstance2 IRabbitMQSub[*model.DataStruct]
+var RabbitMqSubInstance1 IRabbitMqSub[string]
+var RabbitMqSubInstance2 IRabbitMqSub[*model.DataStruct]
 
-type IRabbitMQSub[T any] interface {
-	ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error)
+type IRabbitMqSub[T any] interface {
+	ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error, dlxTable amqp091.Table)
 }
 
-type RabbitMQSub[T any] struct {
+type RabbitMqSub[T any] struct {
 	channel *amqp091.Channel
 }
 
-func NewRabbitMQSub[T any]() (IRabbitMQSub[T], error) {
+func NewRabbitMqSub[T any]() (IRabbitMqSub[T], error) {
 	if channel, err := rabbitmqclient.RabbitMQClientConnInstance.NewChannel(); err != nil {
 		log.Errorf("Create new channel failed: %v", err.Error())
 		return nil, err
 	} else {
-		return &RabbitMQSub[T]{
+		return &RabbitMqSub[T]{
 			channel: channel,
 		}, nil
 	}
 }
 
-func (rabbitMqSub *RabbitMQSub[T]) ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error) {
+func (rabbitMqSub *RabbitMqSub[T]) ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error, dlxTable amqp091.Table) {
 	go func() {
 		closeChan := rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
 
 		for {
-			err := rabbitMqSub.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler)
+			err := rabbitMqSub.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler, dlxTable)
 			if err != nil {
 				log.Errorf("Start comsumer on %v for %v of %v failed: %v, Retry in 5s...", queue, routingKey, exchange, err.Error())
 				time.Sleep(5 * time.Second)
@@ -91,13 +91,13 @@ func (rabbitMqSub *RabbitMQSub[T]) ConsumeWithRetry(ctx context.Context, exchang
 	}()
 }
 
-func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error) error {
+func (rabbitMqSub *RabbitMqSub[T]) startConsume(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error, dlxTable amqp091.Table) error {
 	if err := rabbitMqSub.channel.Qos(prefetchCount, 0, false); err != nil {
 		log.Errorf("Set QoS for channel failed: %v", err.Error())
 		return err
 	}
 
-	if _, err := rabbitMqSub.channel.QueueDeclare(queue, true, false, false, false, nil); err != nil {
+	if _, err := rabbitMqSub.channel.QueueDeclare(queue, true, false, false, false, dlxTable); err != nil {
 		log.Errorf("Declare queue %v for %v of %v failed: %v", queue, routingKey, exchange, err.Error())
 		return err
 	}
@@ -137,7 +137,7 @@ func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange st
 
 				if err := json.Unmarshal([]byte(message.Body), instance); err != nil {
 					log.Errorf("Unmarshal %v failed: %v", message.Body, err.Error())
-					message.Nack(false, true)
+					message.Nack(false, false) // Xử lý bị lỗi sẽ không requeue mà đưa vào unacked list
 					continue
 				}
 
@@ -152,7 +152,7 @@ func (rabbitMqSub *RabbitMQSub[T]) startConsume(ctx context.Context, exchange st
 
 				if err := handler(data); err != nil {
 					log.Errorf("Handle message failed: %v", err.Error())
-					message.Nack(false, true) // Xử lý bị lỗi sẽ requeue
+					message.Nack(false, false) // Xử lý bị lỗi sẽ không requeue mà đưa vào unacked list
 				} else {
 					log.Infof("Handle message successful")
 					message.Ack(false)

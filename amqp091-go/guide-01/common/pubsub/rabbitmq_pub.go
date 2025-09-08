@@ -11,29 +11,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var RabbitMQPubInstance1 IRabbitMQPub[string]
-var RabbitMQPubInstance2 IRabbitMQPub[*model.DataStruct]
+var RabbitMqPubInstance1 IRabbitMqPub[string]
+var RabbitMqPubInstance2 IRabbitMqPub[*model.DataStruct]
 
-type IRabbitMQPub[T any] interface {
+type IRabbitMqPub[T any] interface {
 	PublishWithRetry(ctx context.Context, exchange string, routingKey string, data T)
 }
 
-type RabbitMQPub[T any] struct {
+type RabbitMqPub[T any] struct {
 	channel *amqp091.Channel
 }
 
-func NewRabbitMQPub[T any]() (IRabbitMQPub[T], error) {
+func NewRabbitMqPub[T any]() (IRabbitMqPub[T], error) {
 	if channel, err := rabbitmqclient.RabbitMQClientConnInstance.NewChannel(); err != nil {
 		log.Errorf("Create new channel failed: %v", err.Error())
 		return nil, err
 	} else {
-		return &RabbitMQPub[T]{
+		return &RabbitMqPub[T]{
 			channel: channel,
 		}, nil
 	}
 }
 
-func (rabbitMqPub *RabbitMQPub[T]) PublishWithRetry(ctx context.Context, exchange string, routingKey string, data T) {
+func (rabbitMqPub *RabbitMqPub[T]) PublishWithRetry(ctx context.Context, exchange string, routingKey string, data T) {
 	body, err := json.Marshal(data)
 	if err != nil {
 		log.Errorf("Marshal data failed: %v", err.Error())
@@ -82,7 +82,7 @@ func (rabbitMqPub *RabbitMQPub[T]) PublishWithRetry(ctx context.Context, exchang
 	}
 }
 
-func (rabbitMqPub *RabbitMQPub[T]) startPublish(ctx context.Context, exchange string, routingKey string, body []byte) error {
+func (rabbitMqPub *RabbitMqPub[T]) startPublish(ctx context.Context, exchange string, routingKey string, body []byte) error {
 	return rabbitMqPub.channel.PublishWithContext(
 		ctx,
 		exchange,
