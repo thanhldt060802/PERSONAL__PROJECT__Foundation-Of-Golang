@@ -35,7 +35,7 @@ func NewRabbitMqDlx[T any]() (IRabbitMqDlx[T], error) {
 
 func (rabbitMqDlx *RabbitMqDlx[T]) ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error) {
 	go func() {
-		closeChan := rabbitMqDlx.channel.NotifyClose(make(chan *amqp091.Error))
+		closeChan := rabbitMqDlx.channel.NotifyClose(make(chan *amqp091.Error, 1))
 
 		for {
 			err := rabbitMqDlx.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler)
@@ -82,7 +82,7 @@ func (rabbitMqDlx *RabbitMqDlx[T]) ConsumeWithRetry(ctx context.Context, exchang
 					}
 					rabbitMqDlx.channel = newCh
 
-					closeChan = rabbitMqDlx.channel.NotifyClose(make(chan *amqp091.Error))
+					closeChan = rabbitMqDlx.channel.NotifyClose(make(chan *amqp091.Error, 1))
 					break
 				}
 			}

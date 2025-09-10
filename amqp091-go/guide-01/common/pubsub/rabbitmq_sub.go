@@ -36,7 +36,7 @@ func NewRabbitMqSub[T any]() (IRabbitMqSub[T], error) {
 
 func (rabbitMqSub *RabbitMqSub[T]) ConsumeWithRetry(ctx context.Context, exchange string, queue string, routingKey string, prefetchCount int, handler func(data T) error, dlxTable amqp091.Table) {
 	go func() {
-		closeChan := rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
+		closeChan := rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error, 1))
 
 		for {
 			err := rabbitMqSub.startConsume(ctx, exchange, queue, routingKey, prefetchCount, handler, dlxTable)
@@ -83,7 +83,7 @@ func (rabbitMqSub *RabbitMqSub[T]) ConsumeWithRetry(ctx context.Context, exchang
 					}
 					rabbitMqSub.channel = newCh
 
-					closeChan = rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error))
+					closeChan = rabbitMqSub.channel.NotifyClose(make(chan *amqp091.Error, 1))
 					break
 				}
 			}

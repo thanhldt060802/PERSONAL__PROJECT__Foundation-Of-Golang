@@ -3,6 +3,8 @@ package pubsub
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"sync"
 	"thanhldt060802/internal/rabbitmqclient"
 	"thanhldt060802/model"
 	"time"
@@ -20,6 +22,9 @@ type IRabbitMqPub[T any] interface {
 
 type RabbitMqPub[T any] struct {
 	channel *amqp091.Channel
+
+	confirmCh <-chan amqp091.Confirmation
+	lock      sync.Mutex
 }
 
 func NewRabbitMqPub[T any]() (IRabbitMqPub[T], error) {
@@ -27,8 +32,14 @@ func NewRabbitMqPub[T any]() (IRabbitMqPub[T], error) {
 		log.Errorf("Create new channel failed: %v", err.Error())
 		return nil, err
 	} else {
+		if err := channel.Confirm(false); err != nil {
+			log.Errorf("Turn off confirm option of channel failed: %v", err.Error())
+			return nil, err
+		}
+
 		return &RabbitMqPub[T]{
-			channel: channel,
+			channel:   channel,
+			confirmCh: channel.NotifyPublish(make(chan amqp091.Confirmation, 1)),
 		}, nil
 	}
 }
@@ -40,10 +51,13 @@ func (rabbitMqPub *RabbitMqPub[T]) PublishWithRetry(ctx context.Context, exchang
 		return
 	}
 
-	closeChan := rabbitMqPub.channel.NotifyClose(make(chan *amqp091.Error))
+	rabbitMqPub.lock.Lock()
+	defer rabbitMqPub.lock.Unlock()
+
+	closeChan := rabbitMqPub.channel.NotifyClose(make(chan *amqp091.Error, 1))
 
 	for {
-		err := rabbitMqPub.startPublish(ctx, exchange, routingKey, body)
+		err := rabbitMqPub.startPublishWithConfirm(ctx, exchange, routingKey, body)
 		if err == nil {
 			log.Infof("Publish %v to %v of %v successful", data, routingKey, exchange)
 			return
@@ -72,7 +86,15 @@ func (rabbitMqPub *RabbitMqPub[T]) PublishWithRetry(ctx context.Context, exchang
 				}
 				rabbitMqPub.channel = newCh
 
-				closeChan = rabbitMqPub.channel.NotifyClose(make(chan *amqp091.Error))
+				if err := newCh.Confirm(false); err != nil {
+					log.Errorf("Turn off confirm option of channel failed: %v, Retry in 5s...", err.Error())
+					time.Sleep(5 * time.Second)
+					continue
+				}
+
+				rabbitMqPub.confirmCh = newCh.NotifyPublish(make(chan amqp091.Confirmation, 1))
+
+				closeChan = rabbitMqPub.channel.NotifyClose(make(chan *amqp091.Error, 1))
 				break
 			}
 		default:
@@ -82,8 +104,8 @@ func (rabbitMqPub *RabbitMqPub[T]) PublishWithRetry(ctx context.Context, exchang
 	}
 }
 
-func (rabbitMqPub *RabbitMqPub[T]) startPublish(ctx context.Context, exchange string, routingKey string, body []byte) error {
-	return rabbitMqPub.channel.PublishWithContext(
+func (rabbitMqPub *RabbitMqPub[T]) startPublishWithConfirm(ctx context.Context, exchange string, routingKey string, body []byte) error {
+	err := rabbitMqPub.channel.PublishWithContext(
 		ctx,
 		exchange,
 		routingKey,
@@ -96,4 +118,21 @@ func (rabbitMqPub *RabbitMqPub[T]) startPublish(ctx context.Context, exchange st
 			Timestamp:    time.Now(),
 		},
 	)
+	if err != nil {
+		return err
+	}
+
+	select {
+	case confirm, ok := <-rabbitMqPub.confirmCh:
+		if !ok {
+			return fmt.Errorf("confirm channel closed")
+		}
+		if confirm.Ack {
+			return nil
+		}
+		return fmt.Errorf("nack received for delivery tag: %d", confirm.DeliveryTag)
+	case <-ctx.Done():
+		return fmt.Errorf("publish confirm canceled")
+	}
+
 }

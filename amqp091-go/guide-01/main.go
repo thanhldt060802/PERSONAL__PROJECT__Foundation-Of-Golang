@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var EXAMPLE_NUM = 2
+var EXAMPLE_NUM = 1
 var EXAMPLES map[int]func()
 
 func init() {
@@ -34,7 +34,7 @@ func Example1() {
 	mainExchange := "ldtt-exchange"
 	mainQueue := "ldtt-service-handle-for-" + mainExchange
 	mainRoutingKey := "service.ldtt.*.create"
-	mainParamsRoutingKey := "service.ldtt.%v.create"
+	// mainParamsRoutingKey := "service.ldtt.%v.create"
 
 	dlxExchange := "ldtt-dlx-exchange"
 	dlxQueue := mainQueue + ".dlx"
@@ -94,17 +94,15 @@ func Example1() {
 		}, dlxTable)
 	}()
 
-	go func() {
-		for i := 1; ; i++ {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// go func() {
+	// 	for i := 1; ; i++ {
+	// 		data := fmt.Sprintf("my-payload-%v", i)
+	// 		pubsub.RabbitMqPubInstance1.PublishWithRetry(context.Background(), mainExchange, fmt.Sprintf(mainParamsRoutingKey, i), data)
+	// 		// go pubsub.RabbitMqPubInstance1.PublishWithRetry(context.Background(), mainExchange, fmt.Sprintf(mainParamsRoutingKey, i), data)
 
-			data := fmt.Sprintf("my-payload-%v", i)
-			pubsub.RabbitMqPubInstance1.PublishWithRetry(ctx, mainExchange, fmt.Sprintf(mainParamsRoutingKey, i), data)
-
-			cancel()
-			time.Sleep(200 * time.Millisecond)
-		}
-	}()
+	// 		time.Sleep(200 * time.Millisecond)
+	// 	}
+	// }()
 
 	select {}
 }

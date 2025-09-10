@@ -3,6 +3,7 @@ package rabbitmqclient
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -27,6 +28,8 @@ type RabbitMQConfig struct {
 type RabbitMQClientConn struct {
 	RabbitMQConfig
 	connection *amqp091.Connection
+
+	lock sync.Mutex
 }
 
 func NewRabbitMQClient(config RabbitMQConfig) IRabbitMQClientConn {
@@ -42,6 +45,9 @@ func NewRabbitMQClient(config RabbitMQConfig) IRabbitMQClientConn {
 }
 
 func (c *RabbitMQClientConn) Connect() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	conn, err := amqp091.Dial(fmt.Sprintf("amqp://%v:%v@%v:%v/", c.Username, c.Password, c.Host, c.Port))
 	if err != nil {
 		return err
@@ -57,6 +63,9 @@ func (c *RabbitMQClientConn) GetConnection() *amqp091.Connection {
 }
 
 func (c *RabbitMQClientConn) NewChannel() (*amqp091.Channel, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	return c.connection.Channel()
 }
 
@@ -73,11 +82,16 @@ func (c *RabbitMQClientConn) DeclareExchange(exchange string, kind string) error
 func (c *RabbitMQClientConn) connectionWatcher(ctx context.Context) {
 	go func() {
 		for {
+			c.lock.Lock()
 			closeChan := c.connection.NotifyClose(make(chan *amqp091.Error))
+			c.lock.Unlock()
 
 			select {
 			case <-ctx.Done():
+				c.lock.Lock()
 				c.connection.Close()
+				c.lock.Unlock()
+
 				log.Infof("Context canceled, stop watcher")
 				return
 			case rabbitErr := <-closeChan:
