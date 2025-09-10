@@ -123,6 +123,8 @@ func (rabbitMqSub *RabbitMqSub[T]) startConsume(ctx context.Context, exchange st
 					return
 				}
 
+				log.Infof("Consume from %v of %v successful", message.RoutingKey, message.Exchange)
+
 				var value T
 				t := reflect.TypeOf(value)
 
